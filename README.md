@@ -1,11 +1,12 @@
 # GO Logger
 
-In this package we combined a different loggers so they will be compile with a single interface.
+In this package we combined different loggers so they can be compiled with a single interface.
 This enables switching between the different loggers without changing your code!
 
 ## Supported loggers
 * Pretty printer
 * [Zap](go.uber.org/zap)
+* Mock (empty logger)
 
 ## TODO
 * log
@@ -13,6 +14,23 @@ This enables switching between the different loggers without changing your code!
 * klog
 
 ## How to use
+
+
+#### Basic usage
+
+It is possible to simply call the logger without any initialization, the default logger is the `pretty` logger
+
+```go
+package main
+
+import logger "github.com/armosec/go-logger"
+
+func main(){
+
+    logger.L().Info("This is a nice and colorful logger")
+	// output: [info] This is a nice and colorful logger
+}
+```
 
 #### Initialize a logger
 ```go
@@ -38,21 +56,6 @@ func main() {
 }
 ```
 
-#### Using the logger without initialization
-
-It is possible to simply call the logger without any initialization, the default logger is the `pretty` logger
-
-```go
-package main
-
-import logger "github.com/armosec/go-logger"
-
-func main(){
-
-    logger.L().Info("This logger was not initialized")
-
-}
-```
 
 #### Adding other information to the log
 
