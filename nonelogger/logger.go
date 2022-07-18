@@ -1,8 +1,9 @@
 package nonelogger
 
 import (
-	"go-logger/helpers"
 	"os"
+
+	"github.com/dwertent/go-logger/helpers"
 )
 
 const LoggerName string = "none"

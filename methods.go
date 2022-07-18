@@ -1,12 +1,13 @@
 package logger
 
 import (
-	"go-logger/helpers"
-	"go-logger/nonelogger"
-	"go-logger/prettylogger"
-	"go-logger/zaplogger"
 	"os"
 	"strings"
+
+	"github.com/dwertent/go-logger/helpers"
+	"github.com/dwertent/go-logger/nonelogger"
+	"github.com/dwertent/go-logger/prettylogger"
+	"github.com/dwertent/go-logger/zaplogger"
 )
 
 type ILogger interface {

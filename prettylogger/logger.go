@@ -2,9 +2,10 @@ package prettylogger
 
 import (
 	"fmt"
-	"go-logger/helpers"
 	"os"
 	"sync"
+
+	"github.com/dwertent/go-logger/helpers"
 )
 
 const LoggerName string = "pretty"

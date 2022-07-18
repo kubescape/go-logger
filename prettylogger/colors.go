@@ -1,8 +1,9 @@
 package prettylogger
 
 import (
-	"go-logger/helpers"
 	"io"
+
+	"github.com/dwertent/go-logger/helpers"
 
 	"github.com/fatih/color"
 )

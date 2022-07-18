@@ -1,4 +1,4 @@
-module go-logger
+module github.com/dwertent/go-logger
 
 go 1.18
 
