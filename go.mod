@@ -1,4 +1,4 @@
-module github.com/dwertent/go-logger
+module github.com/kubescape/go-logger
 
 go 1.18
 

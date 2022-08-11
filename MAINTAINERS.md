@@ -1,6 +1,6 @@
 # Maintainers
 
-The following table lists github.com/dwertent/go-logger project maintainers 
+The following table lists github.com/kubescape/go-logger project maintainers 
 
 | Name | GitHub | Email | Organization | Role | Added/Renewed On |
 | --- | --- | --- | --- | --- | --- |

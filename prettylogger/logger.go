@@ -5,7 +5,7 @@ import (
 	"os"
 	"sync"
 
-	"github.com/dwertent/go-logger/helpers"
+	"github.com/kubescape/go-logger/helpers"
 )
 
 const LoggerName string = "pretty"

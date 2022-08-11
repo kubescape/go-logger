@@ -3,7 +3,7 @@ package nonelogger
 import (
 	"os"
 
-	"github.com/dwertent/go-logger/helpers"
+	"github.com/kubescape/go-logger/helpers"
 )
 
 const LoggerName string = "none"

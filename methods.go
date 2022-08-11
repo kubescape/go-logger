@@ -4,10 +4,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/dwertent/go-logger/helpers"
-	"github.com/dwertent/go-logger/nonelogger"
-	"github.com/dwertent/go-logger/prettylogger"
-	"github.com/dwertent/go-logger/zaplogger"
+	"github.com/kubescape/go-logger/helpers"
+	"github.com/kubescape/go-logger/nonelogger"
+	"github.com/kubescape/go-logger/prettylogger"
+	"github.com/kubescape/go-logger/zaplogger"
 )
 
 type ILogger interface {

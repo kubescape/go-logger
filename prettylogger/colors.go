@@ -3,7 +3,7 @@ package prettylogger
 import (
 	"io"
 
-	"github.com/dwertent/go-logger/helpers"
+	"github.com/kubescape/go-logger/helpers"
 
 	"github.com/fatih/color"
 )

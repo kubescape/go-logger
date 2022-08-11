@@ -23,7 +23,7 @@ It is possible to simply call the logger without any initialization, the default
 ```go
 package main
 
-import logger "github.com/dwertent/go-logger"
+import logger "github.com/kubescape/go-logger"
 
 func main(){
 
@@ -36,7 +36,7 @@ func main(){
 ```go
 package main
 
-import logger "github.com/dwertent/go-logger"
+import logger "github.com/kubescape/go-logger"
 
 func main() {
 	// initialize colored logger
@@ -64,8 +64,8 @@ It is possible to add additional information to the log so as strings, integers,
 ```go
 package main
 
-import "github.com/dwertent/go-logger/helpers"
-import logger "github.com/dwertent/go-logger"
+import "github.com/kubescape/go-logger/helpers"
+import logger "github.com/kubescape/go-logger"
 
 func main(){
 

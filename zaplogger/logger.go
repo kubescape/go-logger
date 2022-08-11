@@ -3,7 +3,7 @@ package zaplogger
 import (
 	"os"
 
-	"github.com/dwertent/go-logger/helpers"
+	"github.com/kubescape/go-logger/helpers"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
