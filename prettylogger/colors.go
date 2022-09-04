@@ -36,3 +36,9 @@ func DisableColor(flag bool) {
 		color.NoColor = true
 	}
 }
+
+func EnableColor(flag bool) {
+	if flag {
+		color.NoColor = false
+	}
+}
