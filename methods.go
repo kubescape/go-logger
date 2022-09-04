@@ -37,7 +37,8 @@ func L() ILogger {
 	return l
 }
 
-/* InitLogger initialize desired logger
+/*
+	InitLogger initialize desired logger
 
 Use:
 InitLogger("<logger name>")
@@ -52,7 +53,6 @@ Default:
 
 e.g.
 InitLogger("none") -> will initialize the mock logger
-
 */
 func InitLogger(loggerName string) {
 
@@ -74,6 +74,10 @@ func InitDefaultLogger() {
 
 func DisableColor(flag bool) {
 	prettylogger.DisableColor(flag)
+}
+
+func EnableColor(flag bool) {
+	prettylogger.EnableColor(flag)
 }
 
 func ListLoggersNames() []string {
