@@ -1,6 +1,7 @@
 package nonelogger
 
 import (
+	"context"
 	"os"
 
 	"github.com/kubescape/go-logger/helpers"
@@ -11,11 +12,14 @@ const LoggerName string = "none"
 type NoneLogger struct {
 }
 
+var _ helpers.ILogger = (*NoneLogger)(nil) // ensure all interface methods are here
+
 func NewNoneLogger() *NoneLogger {
 	return &NoneLogger{}
 }
 
 func (nl *NoneLogger) GetLevel() string                                { return "" }
+func (nl *NoneLogger) Ctx(_ context.Context) helpers.ILogger           { return nl }
 func (nl *NoneLogger) LoggerName() string                              { return LoggerName }
 func (nl *NoneLogger) SetWriter(w *os.File)                            {}
 func (nl *NoneLogger) GetWriter() *os.File                             { return nil }
