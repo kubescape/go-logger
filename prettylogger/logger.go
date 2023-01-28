@@ -1,6 +1,7 @@
 package prettylogger
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"sync"
@@ -16,6 +17,8 @@ type PrettyLogger struct {
 	mutex  sync.Mutex
 }
 
+var _ helpers.ILogger = (*PrettyLogger)(nil) // ensure all interface methods are here
+
 func NewPrettyLogger() *PrettyLogger {
 
 	return &PrettyLogger{
@@ -25,10 +28,11 @@ func NewPrettyLogger() *PrettyLogger {
 	}
 }
 
-func (pl *PrettyLogger) GetLevel() string     { return pl.level.String() }
-func (pl *PrettyLogger) SetWriter(w *os.File) { pl.writer = w }
-func (pl *PrettyLogger) GetWriter() *os.File  { return pl.writer }
-func (pl *PrettyLogger) LoggerName() string   { return LoggerName }
+func (pl *PrettyLogger) GetLevel() string                      { return pl.level.String() }
+func (pl *PrettyLogger) SetWriter(w *os.File)                  { pl.writer = w }
+func (pl *PrettyLogger) GetWriter() *os.File                   { return pl.writer }
+func (pl *PrettyLogger) Ctx(_ context.Context) helpers.ILogger { return pl }
+func (pl *PrettyLogger) LoggerName() string                    { return LoggerName }
 
 func (pl *PrettyLogger) SetLevel(level string) error {
 	pl.level = helpers.ToLevel(level)

@@ -1,36 +1,22 @@
 package logger
 
 import (
-	"os"
+	"context"
+	"net/url"
 	"strings"
 
 	"github.com/kubescape/go-logger/helpers"
 	"github.com/kubescape/go-logger/nonelogger"
 	"github.com/kubescape/go-logger/prettylogger"
 	"github.com/kubescape/go-logger/zaplogger"
+	"github.com/uptrace/uptrace-go/uptrace"
+	"go.opentelemetry.io/otel/attribute"
 )
 
-type ILogger interface {
-	Fatal(msg string, details ...helpers.IDetails) // print log and exit 1
-	Error(msg string, details ...helpers.IDetails)
-	Success(msg string, details ...helpers.IDetails)
-	Warning(msg string, details ...helpers.IDetails)
-	Info(msg string, details ...helpers.IDetails)
-	Debug(msg string, details ...helpers.IDetails)
-
-	SetLevel(level string) error
-	GetLevel() string
-
-	SetWriter(w *os.File)
-	GetWriter() *os.File
-
-	LoggerName() string
-}
-
-var l ILogger
+var l helpers.ILogger
 
 // Return initialized logger. If logger not initialized, will call InitializeLogger() with the default value
-func L() ILogger {
+func L() helpers.ILogger {
 	if l == nil {
 		InitDefaultLogger()
 	}
@@ -82,4 +68,45 @@ func EnableColor(flag bool) {
 
 func ListLoggersNames() []string {
 	return []string{prettylogger.LoggerName, zaplogger.LoggerName, nonelogger.LoggerName}
+}
+
+// InitOtel configures OpenTelemetry to export data to OTEL_COLLECTOR_SVC using uptrace collector.
+// You have to set the env variable OTEL_COLLECTOR_SVC to enable otel.
+// It is required to call ShutdownOtel on the context at the end of the main.
+//
+//	func main() {
+//	  // configure otel
+//	  ctx := logger.InitOtel(logger.L(), "<service>", "<version>")
+//	  defer logger.ShutdownOtel(ctx)
+//
+//	  // create a span
+//	  ctx, span := otel.Tracer("").Start(ctx, "<name of the span>")
+//	  defer span.End()
+//
+//	  if err := cmd.Execute(ctx); err != nil {
+//	      // attach log to the span
+//	      logger.L().Ctx(ctx).Fatal(err.Error())
+//	  }
+//	}
+func InitOtel(serviceName, version, accountId string, collectorUrl url.URL) context.Context {
+	ctx := context.Background()
+	if collectorUrl.User == nil {
+		collectorUrl.User = url.User("t")
+	}
+	if collectorUrl.Path == "" {
+		collectorUrl.Path = "1"
+	}
+	attrs := []attribute.KeyValue{attribute.String("account.id", accountId)}
+	uptrace.ConfigureOpentelemetry(
+		uptrace.WithDSN(collectorUrl.String()),
+		uptrace.WithServiceName(serviceName),
+		uptrace.WithServiceVersion(version),
+		uptrace.WithResourceAttributes(attrs...),
+	)
+
+	return ctx
+}
+
+func ShutdownOtel(ctx context.Context) {
+	uptrace.Shutdown(ctx)
 }
