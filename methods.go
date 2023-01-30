@@ -90,6 +90,9 @@ func ListLoggersNames() []string {
 //	}
 func InitOtel(serviceName, version, accountId string, collectorUrl url.URL) context.Context {
 	ctx := context.Background()
+	if collectorUrl.Scheme == "" {
+		collectorUrl.Scheme = "http"
+	}
 	if collectorUrl.User == nil {
 		collectorUrl.User = url.User("t")
 	}
