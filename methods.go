@@ -3,6 +3,7 @@ package logger
 import (
 	"context"
 	"net/url"
+	"os"
 	"strings"
 
 	"github.com/kubescape/go-logger/helpers"
@@ -11,6 +12,13 @@ import (
 	"github.com/kubescape/go-logger/zaplogger"
 	"github.com/uptrace/uptrace-go/uptrace"
 	"go.opentelemetry.io/otel/attribute"
+)
+
+const (
+	// Logger level environment name
+	EnvLoggerLevel = "KS_LOGGER_LEVEL"
+	// Logger name environment name
+	EnvLoggerName = "KS_LOGGER_NAME"
 )
 
 var l helpers.ILogger
@@ -37,10 +45,18 @@ Supported logger names (call ListLoggersNames() for listing supported loggers)
 Default:
 - "pretty"
 
+If the logger name is empty, will try to get the logger name from the environment variable KS_LOGGER_NAME.
+If the logger level environment variable is set, will set the logger level to the value of the environment variable.
+
 e.g.
 InitLogger("none") -> will initialize the mock logger
 */
 func InitLogger(loggerName string) {
+
+	if loggerName == "" {
+		// get logger name from environment variable
+		loggerName = os.Getenv(EnvLoggerName)
+	}
 
 	switch strings.ToLower(loggerName) {
 	case zaplogger.LoggerName:
@@ -50,12 +66,19 @@ func InitLogger(loggerName string) {
 	case nonelogger.LoggerName, "mock", "empty", "ignore":
 		l = nonelogger.NewNoneLogger()
 	default:
-		InitDefaultLogger()
+		l = prettylogger.NewPrettyLogger()
+	}
+
+	// set logger level from environment variable, if empty, will use the default value as set by the package
+	if lev := os.Getenv(EnvLoggerLevel); lev != "" {
+		if err := l.SetLevel(lev); err != nil {
+			l.Warning("failed to set logger level", helpers.String("environment", EnvLoggerLevel), helpers.Error(err))
+		}
 	}
 }
 
 func InitDefaultLogger() {
-	l = prettylogger.NewPrettyLogger()
+	InitLogger("")
 }
 
 func DisableColor(flag bool) {
