@@ -34,6 +34,13 @@ func main(){
 }
 ```
 
+##### Environment variables
+
+You can change the default logger initialization by setting the appropriate environment variable:
+* `KS_LOGGER_NAME`- Set the logger name. The default is `pretty`
+* `KS_LOGGER_LEVEL` - Set the log level. The default is `info`
+
+
 #### Initialize a logger
 ```go
 package main
