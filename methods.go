@@ -111,7 +111,7 @@ func ListLoggersNames() []string {
 //	      logger.L().Ctx(ctx).Fatal(err.Error())
 //	  }
 //	}
-func InitOtel(serviceName, version, accountId string, collectorUrl url.URL) context.Context {
+func InitOtel(serviceName, version, accountId, clusterName string, collectorUrl url.URL) context.Context {
 	ctx := context.Background()
 	if collectorUrl.Scheme == "" {
 		collectorUrl.Scheme = "http"
@@ -122,7 +122,11 @@ func InitOtel(serviceName, version, accountId string, collectorUrl url.URL) cont
 	if collectorUrl.Path == "" {
 		collectorUrl.Path = "1"
 	}
-	attrs := []attribute.KeyValue{attribute.String("account.id", accountId)}
+	attrs := []attribute.KeyValue{
+		attribute.String("account.id", accountId),
+		attribute.String("cluster.name", clusterName),
+	}
+
 	uptrace.ConfigureOpentelemetry(
 		uptrace.WithDSN(collectorUrl.String()),
 		uptrace.WithServiceName(serviceName),
