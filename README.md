@@ -1,4 +1,6 @@
 # GO Logger
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkubescape%2Fgo-logger.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkubescape%2Fgo-logger?ref=badge_shield)
+
 
 In this package we combined different loggers so they can be compiled with a single interface.
 This enables switching between the different loggers without changing your code!
@@ -118,3 +120,6 @@ func main() {
     }
 }
 ```
+
+## License
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fkubescape%2Fgo-logger.svg?type=large)](https://app.fossa.com/projects/git%2Bgithub.com%2Fkubescape%2Fgo-logger?ref=badge_large)
