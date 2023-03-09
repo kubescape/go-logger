@@ -3,6 +3,7 @@ package zaplogger
 import (
 	"context"
 	"os"
+	"strings"
 
 	"github.com/kubescape/go-logger/helpers"
 
@@ -32,25 +33,25 @@ func (zl *ZapLoggerWithCtx) SetLevel(level string) error {
 	return err
 }
 func (zl *ZapLoggerWithCtx) Fatal(msg string, details ...helpers.IDetails) {
-	zl.zapL.Fatal(msg, detailsToZapFields(details)...)
+	zl.zapL.Fatal(strings.ToValidUTF8(msg, ""), detailsToZapFields(details)...)
 }
 
 func (zl *ZapLoggerWithCtx) Error(msg string, details ...helpers.IDetails) {
-	zl.zapL.Error(msg, detailsToZapFields(details)...)
+	zl.zapL.Error(strings.ToValidUTF8(msg, ""), detailsToZapFields(details)...)
 }
 
 func (zl *ZapLoggerWithCtx) Warning(msg string, details ...helpers.IDetails) {
-	zl.zapL.Warn(msg, detailsToZapFields(details)...)
+	zl.zapL.Warn(strings.ToValidUTF8(msg, ""), detailsToZapFields(details)...)
 }
 
 func (zl *ZapLoggerWithCtx) Success(msg string, details ...helpers.IDetails) {
-	zl.zapL.Info(msg, detailsToZapFields(details)...)
+	zl.zapL.Info(strings.ToValidUTF8(msg, ""), detailsToZapFields(details)...)
 }
 
 func (zl *ZapLoggerWithCtx) Info(msg string, details ...helpers.IDetails) {
-	zl.zapL.Info(msg, detailsToZapFields(details)...)
+	zl.zapL.Info(strings.ToValidUTF8(msg, ""), detailsToZapFields(details)...)
 }
 
 func (zl *ZapLoggerWithCtx) Debug(msg string, details ...helpers.IDetails) {
-	zl.zapL.Debug(msg, detailsToZapFields(details)...)
+	zl.zapL.Debug(strings.ToValidUTF8(msg, ""), detailsToZapFields(details)...)
 }
