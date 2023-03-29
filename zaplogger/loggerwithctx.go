@@ -45,13 +45,16 @@ func (zl *ZapLoggerWithCtx) Warning(msg string, details ...helpers.IDetails) {
 }
 
 func (zl *ZapLoggerWithCtx) Success(msg string, details ...helpers.IDetails) {
-	zl.zapL.Info(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToZapFields(details)...)
+	// calling ZapLogger() to get the underlying logger and not attach the log to the span
+	zl.zapL.ZapLogger().Info(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToZapFields(details)...)
 }
 
 func (zl *ZapLoggerWithCtx) Info(msg string, details ...helpers.IDetails) {
-	zl.zapL.Info(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToZapFields(details)...)
+	// calling ZapLogger() to get the underlying logger and not attach the log to the span
+	zl.zapL.ZapLogger().Info(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToZapFields(details)...)
 }
 
 func (zl *ZapLoggerWithCtx) Debug(msg string, details ...helpers.IDetails) {
-	zl.zapL.Debug(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToZapFields(details)...)
+	// calling ZapLogger() to get the underlying logger and not attach the log to the span
+	zl.zapL.ZapLogger().Debug(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToZapFields(details)...)
 }
