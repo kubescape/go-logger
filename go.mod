@@ -1,10 +1,10 @@
 module github.com/kubescape/go-logger
 
-go 1.19
+go 1.20
 
 require (
 	github.com/fatih/color v1.15.0
-	github.com/uptrace/opentelemetry-go-extra/otelzap v0.2.1
+	github.com/uptrace/opentelemetry-go-extra/otelzap v0.2.2
 	github.com/uptrace/uptrace-go v1.16.0
 	go.opentelemetry.io/otel v1.16.0
 	go.uber.org/zap v1.24.0
@@ -18,7 +18,7 @@ require (
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.15.2 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
 	github.com/mattn/go-isatty v0.0.17 // indirect
-	github.com/uptrace/opentelemetry-go-extra/otelutil v0.2.1 // indirect
+	github.com/uptrace/opentelemetry-go-extra/otelutil v0.2.2 // indirect
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.42.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/internal/retry v1.16.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric v0.39.0 // indirect
