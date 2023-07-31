@@ -13,6 +13,9 @@ type ILogger interface {
 	Warning(msg string, details ...IDetails)
 	Info(msg string, details ...IDetails)
 	Debug(msg string, details ...IDetails)
+	Start(msg string, details ...IDetails)
+	StopSuccess(msg string, details ...IDetails)
+	StopError(msg string, details ...IDetails)
 
 	SetLevel(level string) error
 	GetLevel() string

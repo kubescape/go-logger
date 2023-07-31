@@ -58,3 +58,15 @@ func (zl *ZapLoggerWithCtx) Debug(msg string, details ...helpers.IDetails) {
 	// calling ZapLogger() to get the underlying logger and not attach the log to the span
 	zl.zapL.ZapLogger().Debug(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToZapFields(details)...)
 }
+
+func (zl *ZapLoggerWithCtx) Start(msg string, details ...helpers.IDetails) {
+	zl.zapL.ZapLogger().Info(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToZapFields(details)...)
+}
+
+func (zl *ZapLoggerWithCtx) StopSuccess(msg string, details ...helpers.IDetails) {
+	zl.zapL.ZapLogger().Info(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToZapFields(details)...)
+}
+
+func (zl *ZapLoggerWithCtx) StopError(msg string, details ...helpers.IDetails) {
+	zl.zapL.ZapLogger().Info(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToZapFields(details)...)
+}
