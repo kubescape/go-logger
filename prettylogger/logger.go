@@ -6,15 +6,17 @@ import (
 	"os"
 	"sync"
 
+	spinnerpkg "github.com/briandowns/spinner"
 	"github.com/kubescape/go-logger/helpers"
 )
 
 const LoggerName string = "pretty"
 
 type PrettyLogger struct {
-	writer *os.File
-	level  helpers.Level
-	mutex  sync.Mutex
+	writer  *os.File
+	level   helpers.Level
+	spinner *spinnerpkg.Spinner
+	mutex   sync.Mutex
 }
 
 var _ helpers.ILogger = (*PrettyLogger)(nil) // ensure all interface methods are here
@@ -22,9 +24,10 @@ var _ helpers.ILogger = (*PrettyLogger)(nil) // ensure all interface methods are
 func NewPrettyLogger() *PrettyLogger {
 
 	return &PrettyLogger{
-		writer: os.Stderr, // default to stderr
-		level:  helpers.InfoLevel,
-		mutex:  sync.Mutex{},
+		writer:  os.Stderr, // default to stderr
+		level:   helpers.InfoLevel,
+		spinner: nil,
+		mutex:   sync.Mutex{},
 	}
 }
 
@@ -60,18 +63,28 @@ func (pl *PrettyLogger) Debug(msg string, details ...helpers.IDetails) {
 func (pl *PrettyLogger) Success(msg string, details ...helpers.IDetails) {
 	pl.print(helpers.SuccessLevel, msg, details...)
 }
+func (pl *PrettyLogger) Start(msg string, details ...helpers.IDetails) {
+	pl.StartSpinner(pl.writer, msg)
+}
+func (pl *PrettyLogger) StopSuccess(msg string, details ...helpers.IDetails) {
+	pl.StopSpinner(getSymbol("success") + msg + "\n")
+}
+func (pl *PrettyLogger) StopError(msg string, details ...helpers.IDetails) {
+	pl.StopSpinner(getSymbol("error") + msg + "\n")
+}
 
 func (pl *PrettyLogger) print(level helpers.Level, msg string, details ...helpers.IDetails) {
+	pl.PauseSpinner()
 	if !level.Skip(pl.level) {
 		pl.mutex.Lock()
-		prefix(level)(pl.writer, "[%s] ", level.String())
+		prefix(level)(pl.writer, "%s", getSymbol(level.String()))
 		if d := detailsToString(details); d != "" {
 			msg = fmt.Sprintf("%s. %s", msg, d)
 		}
 		message(pl.writer, fmt.Sprintf("%s\n", msg))
 		pl.mutex.Unlock()
 	}
-
+	pl.ResumeSpinner()
 }
 
 func detailsToString(details []helpers.IDetails) string {
@@ -83,4 +96,19 @@ func detailsToString(details []helpers.IDetails) string {
 		}
 	}
 	return s
+}
+
+func getSymbol(level string) string {
+	switch level {
+	case "warning":
+		return "❗ "
+	case "success":
+		return "✔️  "
+	case "fatal", "error":
+		return "❌  "
+	case "debug":
+		return "—  "
+	default:
+		return "〜 "
+	}
 }

@@ -81,6 +81,18 @@ func (zl *ZapLogger) Debug(msg string, details ...helpers.IDetails) {
 	zl.zapL.Debug(msg, detailsToZapFields(details)...)
 }
 
+func (zl *ZapLogger) Start(msg string, details ...helpers.IDetails) {
+	zl.zapL.Info(msg, detailsToZapFields(details)...)
+}
+
+func (zl *ZapLogger) StopSuccess(msg string, details ...helpers.IDetails) {
+	zl.zapL.Info(msg, detailsToZapFields(details)...)
+}
+
+func (zl *ZapLogger) StopError(msg string, details ...helpers.IDetails) {
+	zl.zapL.Info(msg, detailsToZapFields(details)...)
+}
+
 func detailsToZapFields(details []helpers.IDetails) []zapcore.Field {
 	zapFields := []zapcore.Field{}
 	for i := range details {
