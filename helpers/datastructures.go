@@ -7,20 +7,28 @@ import (
 
 const InvalidUtf8ReplacementString = "\uFFFD"
 
+var _ IDetails = (*StringObj)(nil)
+
 type StringObj struct {
 	key   string
 	value string
 }
+
+var _ IDetails = (*ErrorObj)(nil)
 
 type ErrorObj struct {
 	key   string
 	value error
 }
 
+var _ IDetails = (*IntObj)(nil)
+
 type IntObj struct {
 	key   string
 	value int
 }
+
+var _ IDetails = (*InterfaceObj)(nil)
 
 type InterfaceObj struct {
 	key   string
