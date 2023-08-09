@@ -44,24 +44,13 @@ func TestPrettyLoggerPrint(t *testing.T) {
 			var wg sync.WaitGroup
 
 			// Start multiple goroutines to call the print method concurrently
-			go func() {
-				for i := 0; i < 1000; i++ {
-					wg.Add(1)
-					go func() {
-						defer wg.Done()
-						logger.print(tt.printLevel, tt.msg, tt.details...)
-					}()
-				}
-			}()
-			go func() {
-				for i := 0; i < 1000; i++ {
-					wg.Add(1)
-					go func() {
-						defer wg.Done()
-						logger.print(tt.printLevel, tt.msg, tt.details...)
-					}()
-				}
-			}()
+			for i := 0; i < 1000; i++ {
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					logger.print(tt.printLevel, tt.msg, tt.details...)
+				}()
+			}
 
 			// Wait for all goroutines to finish
 			wg.Wait()
