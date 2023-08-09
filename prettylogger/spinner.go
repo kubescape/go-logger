@@ -10,6 +10,8 @@ import (
 
 func (pl *PrettyLogger) StartSpinner(w *os.File, message string) {
 	pl.mutex.Lock()
+	defer pl.mutex.Unlock()
+
 	if pl.spinner != nil && pl.spinner.Active() {
 		return
 	}
@@ -18,18 +20,18 @@ func (pl *PrettyLogger) StartSpinner(w *os.File, message string) {
 		pl.spinner.Suffix = " " + message
 		pl.spinner.Start()
 	}
-	pl.mutex.Unlock()
 }
 
 func (pl *PrettyLogger) StopSpinner(message string) {
 	pl.mutex.Lock()
+	defer pl.mutex.Unlock()
+
 	if pl.spinner == nil || !pl.spinner.Active() {
 		return
 	}
 	pl.spinner.FinalMSG = message
 	pl.spinner.Stop()
 	pl.spinner = nil
-	pl.mutex.Unlock()
 }
 
 func (pl *PrettyLogger) PauseSpinner() {
