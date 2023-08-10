@@ -64,13 +64,13 @@ func (pl *PrettyLogger) Success(msg string, details ...helpers.IDetails) {
 	pl.print(helpers.SuccessLevel, msg, details...)
 }
 func (pl *PrettyLogger) Start(msg string, details ...helpers.IDetails) {
-	pl.StartSpinner(pl.writer, msg)
+	pl.StartSpinner(pl.writer, generateMessage(msg, details))
 }
 func (pl *PrettyLogger) StopSuccess(msg string, details ...helpers.IDetails) {
-	pl.StopSpinner(getSymbol("success") + msg + "\n")
+	pl.StopSpinner(getSymbol("success") + generateMessage(msg, details) + "\n")
 }
 func (pl *PrettyLogger) StopError(msg string, details ...helpers.IDetails) {
-	pl.StopSpinner(getSymbol("error") + msg + "\n")
+	pl.StopSpinner(getSymbol("error") + generateMessage(msg, details) + "\n")
 }
 
 func (pl *PrettyLogger) print(level helpers.Level, msg string, details ...helpers.IDetails) {
@@ -78,10 +78,7 @@ func (pl *PrettyLogger) print(level helpers.Level, msg string, details ...helper
 	if !level.Skip(pl.level) {
 		pl.mutex.Lock()
 		prefix(level)(pl.writer, "%s", getSymbol(level.String()))
-		if d := detailsToString(details); d != "" {
-			msg = fmt.Sprintf("%s. %s", msg, d)
-		}
-		message(pl.writer, fmt.Sprintf("%s\n", msg))
+		message(pl.writer, fmt.Sprintf("%s\n", generateMessage(msg, details)))
 		pl.mutex.Unlock()
 	}
 	pl.ResumeSpinner()
@@ -103,12 +100,19 @@ func getSymbol(level string) string {
 	case "warning":
 		return "❗ "
 	case "success":
-		return "✔️  "
+		return "✅  "
 	case "fatal", "error":
 		return "❌  "
 	case "debug":
-		return "—  "
+		return "🐞  "
 	default:
-		return "〜 "
+		return "ℹ️ "
 	}
+}
+
+func generateMessage(msg string, details []helpers.IDetails) string {
+	if d := detailsToString(details); d != "" {
+		msg = fmt.Sprintf("%s. %s", msg, d)
+	}
+	return msg
 }
