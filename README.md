@@ -9,6 +9,7 @@ We also added OpenTelemetry (otel) spans and logs using helpers and wrappers.
 * Pretty printer
 * [Zap](go.uber.org/zap) with otel support
 * Mock (empty logger)
+* Icon printer
 
 ## TODO
 * log
@@ -52,6 +53,11 @@ func main() {
     logger.InitLogger("pretty")
     logger.L().Info("This is the pretty logger")
     // output: [info] This is the pretty logger
+
+    // initialize icon logger
+    logger.InitLogger("icon")
+    logger.L().Info("This is the icon logger")
+    // output: ℹ️ This is the icon logger
 
     // initialize zap (json) logger
     logger.InitLogger("zap")

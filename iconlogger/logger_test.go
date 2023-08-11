@@ -1,4 +1,4 @@
-package prettylogger
+package iconlogger
 
 import (
 	"context"
@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPrettyLoggerPrint(t *testing.T) {
+func TestIconLoggerPrint(t *testing.T) {
 	tests := []struct {
 		name        string
 		loggerLevel helpers.Level
@@ -36,7 +36,7 @@ func TestPrettyLoggerPrint(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			logger := &PrettyLogger{
+			logger := &IconLogger{
 				level: tt.loggerLevel,
 			}
 
@@ -106,27 +106,49 @@ func TestDetailsToString(t *testing.T) {
 	}
 }
 
-func TestPrettyLoggerGetLevel(t *testing.T) {
-	logger := &PrettyLogger{
+func TestGetSymbol(t *testing.T) {
+	tests := []struct {
+		name   string
+		level  string
+		expect string
+	}{
+		{"Warning", "warning", " ❗ "},
+		{"Success", "success", "✅  "},
+		{"Fatal", "fatal", "❌  "},
+		{"Error", "error", "❌  "},
+		{"Debug", "debug", "🐞  "},
+		{"Default", "info", "ℹ️ "},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := getSymbol(tt.level)
+			assert.Equal(t, tt.expect, got)
+		})
+	}
+}
+
+func TestIconLoggerGetLevel(t *testing.T) {
+	logger := &IconLogger{
 		level: helpers.InfoLevel,
 	}
 	assert.Equal(t, "info", logger.GetLevel())
 }
 
-func TestPrettyLoggerSetAndGetWriter(t *testing.T) {
-	logger := &PrettyLogger{}
+func TestIconLoggerSetAndGetWriter(t *testing.T) {
+	logger := &IconLogger{}
 	writer := os.Stdout
 	logger.SetWriter(writer)
 	assert.Equal(t, writer, logger.GetWriter())
 }
 
-func TestPrettyLoggerCtx(t *testing.T) {
-	logger := &PrettyLogger{}
+func TestIconLoggerCtx(t *testing.T) {
+	logger := &IconLogger{}
 	ctx := context.Background()
 	assert.Equal(t, logger, logger.Ctx(ctx))
 }
 
-func TestPrettyLoggerLoggerName(t *testing.T) {
-	logger := &PrettyLogger{}
+func TestIconLoggerLoggerName(t *testing.T) {
+	logger := &IconLogger{}
 	assert.Equal(t, LoggerName, logger.LoggerName())
 }

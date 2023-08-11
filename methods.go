@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/kubescape/go-logger/helpers"
+	"github.com/kubescape/go-logger/iconlogger"
 	"github.com/kubescape/go-logger/nonelogger"
 	"github.com/kubescape/go-logger/prettylogger"
 	"github.com/kubescape/go-logger/zaplogger"
@@ -41,6 +42,7 @@ Supported logger names (call ListLoggersNames() for listing supported loggers)
 - "zap": Logger from package "go.uber.org/zap"
 - "pretty", "colorful": Human friendly colorful logger
 - "none", "mock", "empty", "ignore": Logger will not print anything
+- "icon", "emoji": Human friendly logger with colors and icons/symbols
 
 Default:
 - "pretty"
@@ -63,6 +65,8 @@ func InitLogger(loggerName string) {
 		l = zaplogger.NewZapLogger()
 	case prettylogger.LoggerName, "colorful":
 		l = prettylogger.NewPrettyLogger()
+	case iconlogger.LoggerName, "emoji":
+		l = iconlogger.NewIconLogger()
 	case nonelogger.LoggerName, "mock", "empty", "ignore":
 		l = nonelogger.NewNoneLogger()
 	default:
@@ -90,7 +94,7 @@ func EnableColor(flag bool) {
 }
 
 func ListLoggersNames() []string {
-	return []string{prettylogger.LoggerName, zaplogger.LoggerName, nonelogger.LoggerName}
+	return []string{prettylogger.LoggerName, iconlogger.LoggerName, zaplogger.LoggerName, nonelogger.LoggerName}
 }
 
 // InitOtel configures OpenTelemetry to export data to OTEL_COLLECTOR_SVC using uptrace collector.

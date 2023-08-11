@@ -6,7 +6,6 @@ import (
 	"os"
 	"sync"
 
-	spinnerpkg "github.com/briandowns/spinner"
 	"github.com/kubescape/go-logger/helpers"
 )
 
@@ -15,7 +14,6 @@ const LoggerName string = "pretty"
 type PrettyLogger struct {
 	writer  *os.File
 	level   helpers.Level
-	spinner *spinnerpkg.Spinner
 	mutex   sync.Mutex
 }
 
@@ -26,7 +24,6 @@ func NewPrettyLogger() *PrettyLogger {
 	return &PrettyLogger{
 		writer:  os.Stderr, // default to stderr
 		level:   helpers.InfoLevel,
-		spinner: nil,
 		mutex:   sync.Mutex{},
 	}
 }
@@ -64,24 +61,22 @@ func (pl *PrettyLogger) Success(msg string, details ...helpers.IDetails) {
 	pl.print(helpers.SuccessLevel, msg, details...)
 }
 func (pl *PrettyLogger) Start(msg string, details ...helpers.IDetails) {
-	pl.StartSpinner(pl.writer, generateMessage(msg, details))
+	pl.print(helpers.InfoLevel, msg, details...)
 }
 func (pl *PrettyLogger) StopSuccess(msg string, details ...helpers.IDetails) {
-	pl.StopSpinner(getSymbol("success") + generateMessage(msg, details) + "\n")
+	pl.print(helpers.SuccessLevel, msg, details...)
 }
 func (pl *PrettyLogger) StopError(msg string, details ...helpers.IDetails) {
-	pl.StopSpinner(getSymbol("error") + generateMessage(msg, details) + "\n")
+	pl.print(helpers.ErrorLevel, msg, details...)
 }
 
 func (pl *PrettyLogger) print(level helpers.Level, msg string, details ...helpers.IDetails) {
-	pl.PauseSpinner()
 	if !level.Skip(pl.level) {
 		pl.mutex.Lock()
-		prefix(level)(pl.writer, "%s", getSymbol(level.String()))
+		prefix(level)(pl.writer, "[%s] ", level.String())
 		message(pl.writer, fmt.Sprintf("%s\n", generateMessage(msg, details)))
 		pl.mutex.Unlock()
 	}
-	pl.ResumeSpinner()
 }
 
 func detailsToString(details []helpers.IDetails) string {
@@ -93,21 +88,6 @@ func detailsToString(details []helpers.IDetails) string {
 		}
 	}
 	return s
-}
-
-func getSymbol(level string) string {
-	switch level {
-	case "warning":
-		return "❗ "
-	case "success":
-		return "✅  "
-	case "fatal", "error":
-		return "❌  "
-	case "debug":
-		return "🐞  "
-	default:
-		return "ℹ️ "
-	}
 }
 
 func generateMessage(msg string, details []helpers.IDetails) string {

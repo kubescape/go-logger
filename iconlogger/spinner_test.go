@@ -1,4 +1,4 @@
-package prettylogger
+package iconlogger
 
 import (
 	"os"
@@ -9,8 +9,8 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestPrettyLoggerStartSpinner(t *testing.T) {
-	logger := &PrettyLogger{
+func TestIconLoggerStartSpinner(t *testing.T) {
+	logger := &IconLogger{
 		mutex:   sync.Mutex{},
 		spinner: &spinner.Spinner{},
 	}
@@ -33,8 +33,8 @@ func TestPrettyLoggerStartSpinner(t *testing.T) {
 	assert.True(t, (isSupported() && logger.spinner.Active()) || (!isSupported() && !logger.spinner.Active()))
 }
 
-func TestPrettyLoggerStopSpinner(t *testing.T) {
-	logger := &PrettyLogger{
+func TestIconLoggerStopSpinner(t *testing.T) {
+	logger := &IconLogger{
 		mutex:   sync.Mutex{},
 		spinner: &spinner.Spinner{},
 	}
@@ -61,8 +61,8 @@ func TestPrettyLoggerStopSpinner(t *testing.T) {
 
 }
 
-func TestPrettyLoggerPauseAndResumeSpinner(t *testing.T) {
-	logger := &PrettyLogger{
+func TestIconLoggerPauseAndResumeSpinner(t *testing.T) {
+	logger := &IconLogger{
 		mutex:   sync.Mutex{},
 		spinner: &spinner.Spinner{},
 	}
