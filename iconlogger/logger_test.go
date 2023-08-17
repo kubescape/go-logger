@@ -117,7 +117,7 @@ func TestGetSymbol(t *testing.T) {
 		{"Fatal", "fatal", "❌  "},
 		{"Error", "error", "❌  "},
 		{"Debug", "debug", "🐞  "},
-		{"Default", "info", "ℹ️ "},
+		{"Default", "info", "ℹ️   "},
 	}
 
 	for _, tt := range tests {
