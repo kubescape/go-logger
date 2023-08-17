@@ -106,7 +106,7 @@ func getSymbol(level string) string {
 	case "debug":
 		return "🐞  "
 	default:
-		return "ℹ️ "
+		return "ℹ️   "
 	}
 }
 
