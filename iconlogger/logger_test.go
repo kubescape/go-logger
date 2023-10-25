@@ -112,12 +112,12 @@ func TestGetSymbol(t *testing.T) {
 		level  string
 		expect string
 	}{
-		{"Warning", "warning", " ❗ "},
-		{"Success", "success", "✅  "},
-		{"Fatal", "fatal", "❌  "},
-		{"Error", "error", "❌  "},
-		{"Debug", "debug", "🐞  "},
-		{"Default", "info", "ℹ️   "},
+		{"Warning", "warning", " ⚠️   "},
+		{"Success", "success", " ✅  "},
+		{"Fatal", "fatal", " ❌  "},
+		{"Error", "error", " ❌  "},
+		{"Debug", "debug", " 🐞  "},
+		{"Default", "info", " ℹ️   "},
 	}
 
 	for _, tt := range tests {

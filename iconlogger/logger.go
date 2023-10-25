@@ -98,15 +98,15 @@ func detailsToString(details []helpers.IDetails) string {
 func getSymbol(level string) string {
 	switch level {
 	case "warning":
-		return " ❗ "
+		return " ⚠️   "
 	case "success":
-		return "✅  "
+		return " ✅  "
 	case "fatal", "error":
-		return "❌  "
+		return " ❌  "
 	case "debug":
-		return "🐞  "
+		return " 🐞  "
 	default:
-		return "ℹ️   "
+		return " ℹ️   "
 	}
 }
 
