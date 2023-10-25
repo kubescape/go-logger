@@ -16,7 +16,8 @@ func (il *IconLogger) StartSpinner(w *os.File, message string) {
 		return
 	}
 	if isSupported() {
-		il.spinner = spinnerpkg.New(spinnerpkg.CharSets[14], 100*time.Millisecond, spinnerpkg.WithWriterFile(w)) // Build our new spinner
+		il.spinner = spinnerpkg.New(spinnerpkg.CharSets[70], 100*time.Millisecond, spinnerpkg.WithWriterFile(w)) // Build our new spinner
+		il.spinner.Prefix = " "
 		il.spinner.Suffix = " " + message
 		il.spinner.Start()
 	}
