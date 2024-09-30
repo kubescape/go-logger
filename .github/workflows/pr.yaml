@@ -16,17 +16,17 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.20'
+        go-version: '1.23'
 
     - name: Test race
       run: go test -v -race ./...
-      
+
     - name: Test units
       run: go test -v ./... -covermode=count -coverprofile=coverage.out
 
     - name: Convert coverage to lcov
       uses: jandelgado/gcov2lcov-action@v1
-      
+
     - name: Coveralls
       uses: coverallsapp/github-action@v1
       with:
@@ -43,5 +43,3 @@ jobs:
         version: latest
         args: --timeout 10m --build-tags=static
         only-new-issues: true
-
-
