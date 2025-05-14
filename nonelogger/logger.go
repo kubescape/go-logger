@@ -3,6 +3,7 @@ package nonelogger
 import (
 	"context"
 	"os"
+	"time"
 
 	"github.com/kubescape/go-logger/helpers"
 )
@@ -33,3 +34,6 @@ func (nl *NoneLogger) Debug(msg string, details ...helpers.IDetails)       {}
 func (nl *NoneLogger) Start(msg string, details ...helpers.IDetails)       {}
 func (nl *NoneLogger) StopSuccess(msg string, details ...helpers.IDetails) {}
 func (nl *NoneLogger) StopError(msg string, details ...helpers.IDetails)   {}
+func (nl *NoneLogger) TimedWrapper(funcName string, timeout time.Duration, task func()) {
+	helpers.TimedWrapperHelper(nl, funcName, timeout, task)
+}
