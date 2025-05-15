@@ -3,6 +3,7 @@ package helpers
 import (
 	"context"
 	"os"
+	"time"
 )
 
 // ILogger interface moved here to prevent import cycles
@@ -25,4 +26,6 @@ type ILogger interface {
 
 	Ctx(ctx context.Context) ILogger
 	LoggerName() string
+
+	TimedWrapper(funcName string, timeout time.Duration, task func())
 }

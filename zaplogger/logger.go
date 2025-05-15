@@ -3,6 +3,7 @@ package zaplogger
 import (
 	"context"
 	"os"
+	"time"
 
 	"github.com/kubescape/go-logger/helpers"
 
@@ -91,6 +92,10 @@ func (zl *ZapLogger) StopSuccess(msg string, details ...helpers.IDetails) {
 
 func (zl *ZapLogger) StopError(msg string, details ...helpers.IDetails) {
 	zl.zapL.Info(msg, detailsToZapFields(details)...)
+}
+
+func (zl *ZapLogger) TimedWrapper(funcName string, timeout time.Duration, task func()) {
+	helpers.TimedWrapperHelper(zl, funcName, timeout, task)
 }
 
 func detailsToZapFields(details []helpers.IDetails) []zapcore.Field {

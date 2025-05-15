@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"time"
 
 	spinnerpkg "github.com/briandowns/spinner"
 	"github.com/kubescape/go-logger/helpers"
@@ -71,6 +72,10 @@ func (il *IconLogger) StopSuccess(msg string, details ...helpers.IDetails) {
 }
 func (il *IconLogger) StopError(msg string, details ...helpers.IDetails) {
 	il.StopSpinner(getSymbol("error") + generateMessage(msg, details) + "\n")
+}
+
+func (il *IconLogger) TimedWrapper(funcName string, timeout time.Duration, task func()) {
+	helpers.TimedWrapperHelper(il, funcName, timeout, task)
 }
 
 func (il *IconLogger) print(level helpers.Level, msg string, details ...helpers.IDetails) {

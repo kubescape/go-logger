@@ -4,6 +4,7 @@ import (
 	"context"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/kubescape/go-logger/helpers"
 
@@ -69,4 +70,8 @@ func (zl *ZapLoggerWithCtx) StopSuccess(msg string, details ...helpers.IDetails)
 
 func (zl *ZapLoggerWithCtx) StopError(msg string, details ...helpers.IDetails) {
 	zl.zapL.ZapLogger().Info(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToZapFields(details)...)
+}
+
+func (zl *ZapLoggerWithCtx) TimedWrapper(funcName string, timeout time.Duration, task func()) {
+	helpers.TimedWrapperHelper(zl, funcName, timeout, task)
 }
