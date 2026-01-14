@@ -99,11 +99,12 @@ func main(){
 
 #### Using otel
 
-Once you add this code you can start adding spans and use the zap logger to send events attached to spans.
+Once you add this code you can start adding spans and use the slog or zap logger to send events attached to spans.
 * spans can be created as [manual instrumentation](https://opentelemetry.io/docs/instrumentation/go/manual/)
 * or with [instrumentation plugins](https://uptrace.dev/opentelemetry/instrumentations/?lang=go)
 * logs should be attached to a context which contains a span using `.Ctx(ctx)`
-* only logs with severity > Warn will send events
+* the slog logger integrates with OpenTelemetry using the `otelslog` bridge and sends all logs to both stdout and the OTel collector
+* only logs with severity > Warn will send events (for zap logger)
 * the variable `OTEL_COLLECTOR_SVC` configures where to send otel data with the gRPC protocol
 * you can specify `ACCOUNT_ID` to enrich data with it
 
