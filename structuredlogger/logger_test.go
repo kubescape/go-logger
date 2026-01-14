@@ -1,4 +1,4 @@
-package sloglogger
+package structuredlogger
 
 import (
 	"context"
@@ -7,18 +7,18 @@ import (
 	"github.com/kubescape/go-logger/helpers"
 )
 
-func TestNewSlogLogger(t *testing.T) {
-	logger := NewSlogLogger()
+func TestNewStructuredLogger(t *testing.T) {
+	logger := NewStructuredLogger()
 	if logger == nil {
-		t.Fatal("NewSlogLogger returned nil")
+		t.Fatal("NewStructuredLogger returned nil")
 	}
 	if logger.LoggerName() != LoggerName {
 		t.Errorf("LoggerName() = %v, want %v", logger.LoggerName(), LoggerName)
 	}
 }
 
-func TestSlogLoggerSetLevel(t *testing.T) {
-	logger := NewSlogLogger()
+func TestStructuredLoggerSetLevel(t *testing.T) {
+	logger := NewStructuredLogger()
 
 	tests := []struct {
 		level string
@@ -43,8 +43,8 @@ func TestSlogLoggerSetLevel(t *testing.T) {
 	}
 }
 
-func TestSlogLoggerLogging(t *testing.T) {
-	logger := NewSlogLogger()
+func TestStructuredLoggerLogging(t *testing.T) {
+	logger := NewStructuredLogger()
 
 	// Test all log methods to ensure they don't panic
 	logger.Debug("debug message", helpers.String("key", "value"))
@@ -57,8 +57,8 @@ func TestSlogLoggerLogging(t *testing.T) {
 	logger.StopError("stop error message")
 }
 
-func TestSlogLoggerWithCtx(t *testing.T) {
-	logger := NewSlogLogger()
+func TestStructuredLoggerWithCtx(t *testing.T) {
+	logger := NewStructuredLogger()
 	ctx := context.Background()
 	ctxLogger := logger.Ctx(ctx)
 

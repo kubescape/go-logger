@@ -6,7 +6,7 @@ import (
 
 	"github.com/kubescape/go-logger/nonelogger"
 	"github.com/kubescape/go-logger/prettylogger"
-	"github.com/kubescape/go-logger/sloglogger"
+	"github.com/kubescape/go-logger/structuredlogger"
 	"github.com/kubescape/go-logger/zaplogger"
 )
 
@@ -29,14 +29,14 @@ func TestInitLogger(t *testing.T) {
 		{
 			name: "TestInitLogger default",
 			want: args{
-				loggerName:  sloglogger.LoggerName,
+				loggerName:  structuredlogger.LoggerName,
 				loggerLevel: "info",
 			},
 		},
 		{
 			name: "TestInitLogger slog info",
 			want: args{
-				loggerName:  sloglogger.LoggerName,
+				loggerName:  structuredlogger.LoggerName,
 				loggerLevel: "info",
 			},
 			args: args{
@@ -47,7 +47,7 @@ func TestInitLogger(t *testing.T) {
 		{
 			name: "TestInitLogger slog debug",
 			want: args{
-				loggerName:  sloglogger.LoggerName,
+				loggerName:  structuredlogger.LoggerName,
 				loggerLevel: "debug",
 			},
 			args: args{

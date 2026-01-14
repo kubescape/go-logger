@@ -1,4 +1,4 @@
-package sloglogger
+package structuredlogger
 
 import (
 	"context"
@@ -14,14 +14,14 @@ import (
 
 const LoggerName string = "slog"
 
-type SlogLogger struct {
+type StructuredLogger struct {
 	slogL *slog.Logger
 	level *slog.LevelVar
 }
 
-var _ helpers.ILogger = (*SlogLogger)(nil) // ensure all interface methods are here
+var _ helpers.ILogger = (*StructuredLogger)(nil) // ensure all interface methods are here
 
-func NewSlogLogger() *SlogLogger {
+func NewStructuredLogger() *StructuredLogger {
 	level := &slog.LevelVar{}
 	level.Set(slog.LevelInfo)
 
@@ -42,84 +42,84 @@ func NewSlogLogger() *SlogLogger {
 
 	logger := slog.New(handler)
 
-	return &SlogLogger{
+	return &StructuredLogger{
 		slogL: logger,
 		level: level,
 	}
 }
 
-func (sl *SlogLogger) GetLevel() string {
+func (sl *StructuredLogger) GetLevel() string {
 	return levelToString(sl.level.Level())
 }
 
-func (sl *SlogLogger) SetWriter(w *os.File) {
+func (sl *StructuredLogger) SetWriter(w *os.File) {
 	// slog writes to the handler's writer, which is configured at creation time
 	// For simplicity, we'll skip dynamic writer changes for now
 }
 
-func (sl *SlogLogger) GetWriter() *os.File {
+func (sl *StructuredLogger) GetWriter() *os.File {
 	return nil
 }
 
-func (sl *SlogLogger) Ctx(ctx context.Context) helpers.ILogger {
-	return &SlogLoggerWithCtx{
+func (sl *StructuredLogger) Ctx(ctx context.Context) helpers.ILogger {
+	return &StructuredLoggerWithCtx{
 		slogL: sl.slogL,
 		level: sl.level,
 		ctx:   ctx,
 	}
 }
 
-func (sl *SlogLogger) LoggerName() string {
+func (sl *StructuredLogger) LoggerName() string {
 	return LoggerName
 }
 
-func (sl *SlogLogger) SetLevel(level string) error {
+func (sl *StructuredLogger) SetLevel(level string) error {
 	l := stringToLevel(level)
 	sl.level.Set(l)
 	return nil
 }
 
-func (sl *SlogLogger) Fatal(msg string, details ...helpers.IDetails) {
+func (sl *StructuredLogger) Fatal(msg string, details ...helpers.IDetails) {
 	sl.slogL.Error(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
 	os.Exit(1)
 }
 
-func (sl *SlogLogger) Error(msg string, details ...helpers.IDetails) {
+func (sl *StructuredLogger) Error(msg string, details ...helpers.IDetails) {
 	sl.slogL.Error(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
 }
 
-func (sl *SlogLogger) Warning(msg string, details ...helpers.IDetails) {
+func (sl *StructuredLogger) Warning(msg string, details ...helpers.IDetails) {
 	sl.slogL.Warn(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
 }
 
-func (sl *SlogLogger) Success(msg string, details ...helpers.IDetails) {
+func (sl *StructuredLogger) Success(msg string, details ...helpers.IDetails) {
 	// Success is logged as Info with a "success" attribute
 	attrs := append([]any{slog.Bool("success", true)}, detailsToAttrs(details)...)
 	sl.slogL.Info(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), attrs...)
 }
 
-func (sl *SlogLogger) Info(msg string, details ...helpers.IDetails) {
+func (sl *StructuredLogger) Info(msg string, details ...helpers.IDetails) {
 	sl.slogL.Info(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
 }
 
-func (sl *SlogLogger) Debug(msg string, details ...helpers.IDetails) {
+func (sl *StructuredLogger) Debug(msg string, details ...helpers.IDetails) {
 	sl.slogL.Debug(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
 }
 
-func (sl *SlogLogger) Start(msg string, details ...helpers.IDetails) {
+func (sl *StructuredLogger) Start(msg string, details ...helpers.IDetails) {
 	sl.slogL.Info(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
 }
 
-func (sl *SlogLogger) StopSuccess(msg string, details ...helpers.IDetails) {
+func (sl *StructuredLogger) StopSuccess(msg string, details ...helpers.IDetails) {
 	attrs := append([]any{slog.Bool("success", true)}, detailsToAttrs(details)...)
 	sl.slogL.Info(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), attrs...)
 }
 
-func (sl *SlogLogger) StopError(msg string, details ...helpers.IDetails) {
+func (sl *StructuredLogger) StopError(msg string, details ...helpers.IDetails) {
 	sl.slogL.Error(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
 }
 
-func (sl *SlogLogger) TimedWrapper(funcName string, timeout time.Duration, task func()) {
+func (sl *StructuredLogger) TimedWrapper(funcName string, timeout time.Duration, task func()) {
 	helpers.TimedWrapperHelper(sl, funcName, timeout, task)
 }
 

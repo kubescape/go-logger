@@ -1,4 +1,4 @@
-package sloglogger
+package structuredlogger
 
 import (
 	"context"
@@ -9,9 +9,9 @@ import (
 	"go.opentelemetry.io/otel/sdk/trace"
 )
 
-// TestSlogLoggerWithOTel tests that slog logger integrates with OpenTelemetry
-func TestSlogLoggerWithOTel(t *testing.T) {
-	logger := NewSlogLogger()
+// TestStructuredLoggerWithOTel tests that structured logger integrates with OpenTelemetry
+func TestStructuredLoggerWithOTel(t *testing.T) {
+	logger := NewStructuredLogger()
 
 	// Create a proper trace provider for testing
 	tp := trace.NewTracerProvider()
@@ -40,9 +40,9 @@ func TestSlogLoggerWithOTel(t *testing.T) {
 	}
 }
 
-// TestSlogLoggerLevelFiltering tests that log levels are properly filtered
-func TestSlogLoggerLevelFiltering(t *testing.T) {
-	logger := NewSlogLogger()
+// TestStructuredLoggerLevelFiltering tests that log levels are properly filtered
+func TestStructuredLoggerLevelFiltering(t *testing.T) {
+	logger := NewStructuredLogger()
 
 	// Set to warning level
 	logger.SetLevel("warning")

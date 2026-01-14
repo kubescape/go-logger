@@ -10,7 +10,7 @@ import (
 	"github.com/kubescape/go-logger/iconlogger"
 	"github.com/kubescape/go-logger/nonelogger"
 	"github.com/kubescape/go-logger/prettylogger"
-	"github.com/kubescape/go-logger/sloglogger"
+	"github.com/kubescape/go-logger/structuredlogger"
 	"github.com/kubescape/go-logger/zaplogger"
 	"github.com/uptrace/uptrace-go/uptrace"
 	"go.opentelemetry.io/otel/attribute"
@@ -63,8 +63,8 @@ func InitLogger(loggerName string) {
 	}
 
 	switch strings.ToLower(loggerName) {
-	case sloglogger.LoggerName:
-		l = sloglogger.NewSlogLogger()
+	case structuredlogger.LoggerName:
+		l = structuredlogger.NewStructuredLogger()
 	case zaplogger.LoggerName:
 		l = zaplogger.NewZapLogger()
 	case prettylogger.LoggerName, "colorful":
@@ -74,7 +74,7 @@ func InitLogger(loggerName string) {
 	case nonelogger.LoggerName, "mock", "empty", "ignore":
 		l = nonelogger.NewNoneLogger()
 	default:
-		l = sloglogger.NewSlogLogger()
+		l = structuredlogger.NewStructuredLogger()
 	}
 
 	// set logger level from environment variable, if empty, will use the default value as set by the package
@@ -98,7 +98,7 @@ func EnableColor(flag bool) {
 }
 
 func ListLoggersNames() []string {
-	return []string{sloglogger.LoggerName, prettylogger.LoggerName, iconlogger.LoggerName, zaplogger.LoggerName, nonelogger.LoggerName}
+	return []string{structuredlogger.LoggerName, prettylogger.LoggerName, iconlogger.LoggerName, zaplogger.LoggerName, nonelogger.LoggerName}
 }
 
 // InitOtel configures OpenTelemetry to export data to OTEL_COLLECTOR_SVC using uptrace collector.
