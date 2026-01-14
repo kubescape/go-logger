@@ -6,6 +6,7 @@ This enables switching between the different loggers without changing your code!
 We also added OpenTelemetry (otel) spans and logs using helpers and wrappers.
 
 ## Supported loggers
+* Structured logger based on [log/slog](https://pkg.go.dev/log/slog) with otel support (default)
 * Pretty printer
 * [Zap](go.uber.org/zap) with otel support
 * Mock (empty logger)
@@ -21,7 +22,7 @@ We also added OpenTelemetry (otel) spans and logs using helpers and wrappers.
 
 #### Basic usage
 
-It is possible to simply call the logger without any initialization, the default logger is the `pretty` logger
+It is possible to simply call the logger without any initialization, the default logger is the `slog` logger
 
 ```go
 package main
@@ -30,15 +31,15 @@ import logger "github.com/kubescape/go-logger"
 
 func main(){
 
-    logger.L().Info("This is a nice and colorful logger")
-    // output: [info] This is a nice and colorful logger
+    logger.L().Info("This is a structured logger")
+    // output: {"time":"2026-01-14T10:15:00.000Z","level":"INFO","msg":"This is a structured logger"}
 }
 ```
 
 ##### Environment variables
 
 You can change the default logger initialization by setting the appropriate environment variable:
-* `KS_LOGGER_NAME`- Set the logger name. The default is `pretty`
+* `KS_LOGGER_NAME`- Set the logger name. The default is `slog`
 * `KS_LOGGER_LEVEL` - Set the log level. The default is `info`
 
 
@@ -49,6 +50,11 @@ package main
 import logger "github.com/kubescape/go-logger"
 
 func main() {
+    // initialize slog (structured) logger
+    logger.InitLogger("slog")
+    logger.L().Info("This is the slog logger")
+    // output: {"time":"2026-01-14T10:15:00.000Z","level":"INFO","msg":"This is the slog logger"}
+
     // initialize colored logger
     logger.InitLogger("pretty")
     logger.L().Info("This is the pretty logger")

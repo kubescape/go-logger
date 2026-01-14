@@ -10,6 +10,7 @@ import (
 	"github.com/kubescape/go-logger/iconlogger"
 	"github.com/kubescape/go-logger/nonelogger"
 	"github.com/kubescape/go-logger/prettylogger"
+	"github.com/kubescape/go-logger/sloglogger"
 	"github.com/kubescape/go-logger/zaplogger"
 	"github.com/uptrace/uptrace-go/uptrace"
 	"go.opentelemetry.io/otel/attribute"
@@ -39,13 +40,14 @@ Use:
 InitLogger("<logger name>")
 
 Supported logger names (call ListLoggersNames() for listing supported loggers)
+- "slog": Structured logger from package "log/slog" with OpenTelemetry support
 - "zap": Logger from package "go.uber.org/zap"
 - "pretty", "colorful": Human friendly colorful logger
 - "none", "mock", "empty", "ignore": Logger will not print anything
 - "icon", "emoji": Human friendly logger with colors and icons/symbols
 
 Default:
-- "pretty"
+- "slog"
 
 If the logger name is empty, will try to get the logger name from the environment variable KS_LOGGER_NAME.
 If the logger level environment variable is set, will set the logger level to the value of the environment variable.
@@ -61,6 +63,8 @@ func InitLogger(loggerName string) {
 	}
 
 	switch strings.ToLower(loggerName) {
+	case sloglogger.LoggerName:
+		l = sloglogger.NewSlogLogger()
 	case zaplogger.LoggerName:
 		l = zaplogger.NewZapLogger()
 	case prettylogger.LoggerName, "colorful":
@@ -70,7 +74,7 @@ func InitLogger(loggerName string) {
 	case nonelogger.LoggerName, "mock", "empty", "ignore":
 		l = nonelogger.NewNoneLogger()
 	default:
-		l = prettylogger.NewPrettyLogger()
+		l = sloglogger.NewSlogLogger()
 	}
 
 	// set logger level from environment variable, if empty, will use the default value as set by the package
@@ -94,7 +98,7 @@ func EnableColor(flag bool) {
 }
 
 func ListLoggersNames() []string {
-	return []string{prettylogger.LoggerName, iconlogger.LoggerName, zaplogger.LoggerName, nonelogger.LoggerName}
+	return []string{sloglogger.LoggerName, prettylogger.LoggerName, iconlogger.LoggerName, zaplogger.LoggerName, nonelogger.LoggerName}
 }
 
 // InitOtel configures OpenTelemetry to export data to OTEL_COLLECTOR_SVC using uptrace collector.
