@@ -25,14 +25,19 @@ func NewSlogLogger() *SlogLogger {
 	level := &slog.LevelVar{}
 	level.Set(slog.LevelInfo)
 
-	// Create handler with OpenTelemetry bridge
+	// Create JSON handler for stdout
+	jsonHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: level,
+	})
+
+	// Create OpenTelemetry handler for OTel integration
 	loggerProvider := global.GetLoggerProvider()
 	otelHandler := otelslog.NewHandler(LoggerName, otelslog.WithLoggerProvider(loggerProvider))
 
-	// Wrap with LevelHandler to support level filtering
-	handler := &LevelHandler{
-		Handler: otelHandler,
-		level:   level,
+	// Use MultiHandler to write to both stdout and OTel
+	handler := &MultiHandler{
+		handlers: []slog.Handler{jsonHandler, otelHandler},
+		level:    level,
 	}
 
 	logger := slog.New(handler)
@@ -163,30 +168,43 @@ func levelToString(level slog.Level) string {
 	}
 }
 
-// LevelHandler wraps a handler to add level filtering
-type LevelHandler struct {
-	slog.Handler
-	level *slog.LevelVar
+// MultiHandler writes to multiple handlers
+type MultiHandler struct {
+	handlers []slog.Handler
+	level    *slog.LevelVar
 }
 
-func (h *LevelHandler) Enabled(ctx context.Context, level slog.Level) bool {
+func (h *MultiHandler) Enabled(ctx context.Context, level slog.Level) bool {
 	return level >= h.level.Level()
 }
 
-func (h *LevelHandler) Handle(ctx context.Context, r slog.Record) error {
-	return h.Handler.Handle(ctx, r)
+func (h *MultiHandler) Handle(ctx context.Context, r slog.Record) error {
+	for _, handler := range h.handlers {
+		if err := handler.Handle(ctx, r); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
-func (h *LevelHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
-	return &LevelHandler{
-		Handler: h.Handler.WithAttrs(attrs),
-		level:   h.level,
+func (h *MultiHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	newHandlers := make([]slog.Handler, len(h.handlers))
+	for i, handler := range h.handlers {
+		newHandlers[i] = handler.WithAttrs(attrs)
+	}
+	return &MultiHandler{
+		handlers: newHandlers,
+		level:    h.level,
 	}
 }
 
-func (h *LevelHandler) WithGroup(name string) slog.Handler {
-	return &LevelHandler{
-		Handler: h.Handler.WithGroup(name),
-		level:   h.level,
+func (h *MultiHandler) WithGroup(name string) slog.Handler {
+	newHandlers := make([]slog.Handler, len(h.handlers))
+	for i, handler := range h.handlers {
+		newHandlers[i] = handler.WithGroup(name)
+	}
+	return &MultiHandler{
+		handlers: newHandlers,
+		level:    h.level,
 	}
 }
