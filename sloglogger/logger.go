@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/kubescape/go-logger/helpers"
@@ -74,43 +75,43 @@ func (sl *SlogLogger) SetLevel(level string) error {
 }
 
 func (sl *SlogLogger) Fatal(msg string, details ...helpers.IDetails) {
-	sl.slogL.Error(msg, detailsToAttrs(details)...)
+	sl.slogL.Error(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
 	os.Exit(1)
 }
 
 func (sl *SlogLogger) Error(msg string, details ...helpers.IDetails) {
-	sl.slogL.Error(msg, detailsToAttrs(details)...)
+	sl.slogL.Error(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
 }
 
 func (sl *SlogLogger) Warning(msg string, details ...helpers.IDetails) {
-	sl.slogL.Warn(msg, detailsToAttrs(details)...)
+	sl.slogL.Warn(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
 }
 
 func (sl *SlogLogger) Success(msg string, details ...helpers.IDetails) {
 	// Success is logged as Info with a "success" attribute
 	attrs := append([]any{slog.Bool("success", true)}, detailsToAttrs(details)...)
-	sl.slogL.Info(msg, attrs...)
+	sl.slogL.Info(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), attrs...)
 }
 
 func (sl *SlogLogger) Info(msg string, details ...helpers.IDetails) {
-	sl.slogL.Info(msg, detailsToAttrs(details)...)
+	sl.slogL.Info(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
 }
 
 func (sl *SlogLogger) Debug(msg string, details ...helpers.IDetails) {
-	sl.slogL.Debug(msg, detailsToAttrs(details)...)
+	sl.slogL.Debug(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
 }
 
 func (sl *SlogLogger) Start(msg string, details ...helpers.IDetails) {
-	sl.slogL.Info(msg, detailsToAttrs(details)...)
+	sl.slogL.Info(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
 }
 
 func (sl *SlogLogger) StopSuccess(msg string, details ...helpers.IDetails) {
 	attrs := append([]any{slog.Bool("success", true)}, detailsToAttrs(details)...)
-	sl.slogL.Info(msg, attrs...)
+	sl.slogL.Info(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), attrs...)
 }
 
 func (sl *SlogLogger) StopError(msg string, details ...helpers.IDetails) {
-	sl.slogL.Error(msg, detailsToAttrs(details)...)
+	sl.slogL.Error(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
 }
 
 func (sl *SlogLogger) TimedWrapper(funcName string, timeout time.Duration, task func()) {
