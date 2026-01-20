@@ -29,7 +29,7 @@ func TestInitLogger(t *testing.T) {
 		{
 			name: "TestInitLogger default",
 			want: args{
-				loggerName:  structuredlogger.LoggerName,
+				loggerName:  prettylogger.LoggerName,
 				loggerLevel: "info",
 			},
 		},
