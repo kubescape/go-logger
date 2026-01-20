@@ -6,7 +6,8 @@ This enables switching between the different loggers without changing your code!
 We also added OpenTelemetry (otel) spans and logs using helpers and wrappers.
 
 ## Supported loggers
-* Pretty printer
+* Pretty printer (default)
+* Structured logger based on [log/slog](https://pkg.go.dev/log/slog) with otel support
 * [Zap](go.uber.org/zap) with otel support
 * Mock (empty logger)
 * Icon printer
@@ -49,6 +50,11 @@ package main
 import logger "github.com/kubescape/go-logger"
 
 func main() {
+    // initialize slog (structured) logger
+    logger.InitLogger("slog")
+    logger.L().Info("This is the slog logger")
+    // output: {"time":"2026-01-14T10:15:00.000Z","level":"INFO","msg":"This is the slog logger"}
+
     // initialize colored logger
     logger.InitLogger("pretty")
     logger.L().Info("This is the pretty logger")
@@ -93,11 +99,12 @@ func main(){
 
 #### Using otel
 
-Once you add this code you can start adding spans and use the zap logger to send events attached to spans.
+Once you add this code you can start adding spans and use the slog or zap logger to send events attached to spans.
 * spans can be created as [manual instrumentation](https://opentelemetry.io/docs/instrumentation/go/manual/)
 * or with [instrumentation plugins](https://uptrace.dev/opentelemetry/instrumentations/?lang=go)
 * logs should be attached to a context which contains a span using `.Ctx(ctx)`
-* only logs with severity > Warn will send events
+* the slog logger integrates with OpenTelemetry using the `otelslog` bridge and sends all logs to both stdout and the OTel collector
+* only logs with severity > Warn will send events (for zap logger)
 * the variable `OTEL_COLLECTOR_SVC` configures where to send otel data with the gRPC protocol
 * you can specify `ACCOUNT_ID` to enrich data with it
 

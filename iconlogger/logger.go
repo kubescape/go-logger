@@ -83,7 +83,7 @@ func (il *IconLogger) print(level helpers.Level, msg string, details ...helpers.
 	if !level.Skip(il.level) {
 		il.mutex.Lock()
 		fmt.Fprintf(il.writer, "%s", getSymbol(level.String()))
-		fmt.Fprintf(il.writer, fmt.Sprintf("%s\n", generateMessage(msg, details)))
+		fmt.Fprintln(il.writer, generateMessage(msg, details))
 		il.mutex.Unlock()
 	}
 	il.ResumeSpinner()

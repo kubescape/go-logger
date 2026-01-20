@@ -1,0 +1,210 @@
+package structuredlogger
+
+import (
+	"context"
+	"log/slog"
+	"os"
+	"strings"
+	"time"
+
+	"github.com/kubescape/go-logger/helpers"
+	"go.opentelemetry.io/contrib/bridges/otelslog"
+	"go.opentelemetry.io/otel/log/global"
+)
+
+const LoggerName string = "slog"
+
+type StructuredLogger struct {
+	slogL *slog.Logger
+	level *slog.LevelVar
+}
+
+var _ helpers.ILogger = (*StructuredLogger)(nil) // ensure all interface methods are here
+
+func NewStructuredLogger() *StructuredLogger {
+	level := &slog.LevelVar{}
+	level.Set(slog.LevelInfo)
+
+	// Create JSON handler for stdout
+	jsonHandler := slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{
+		Level: level,
+	})
+
+	// Create OpenTelemetry handler for OTel integration
+	loggerProvider := global.GetLoggerProvider()
+	otelHandler := otelslog.NewHandler(LoggerName, otelslog.WithLoggerProvider(loggerProvider))
+
+	// Use MultiHandler to write to both stdout and OTel
+	handler := &MultiHandler{
+		handlers: []slog.Handler{jsonHandler, otelHandler},
+		level:    level,
+	}
+
+	logger := slog.New(handler)
+
+	return &StructuredLogger{
+		slogL: logger,
+		level: level,
+	}
+}
+
+func (sl *StructuredLogger) GetLevel() string {
+	return levelToString(sl.level.Level())
+}
+
+func (sl *StructuredLogger) SetWriter(w *os.File) {
+	// slog writes to the handler's writer, which is configured at creation time
+	// For simplicity, we'll skip dynamic writer changes for now
+}
+
+func (sl *StructuredLogger) GetWriter() *os.File {
+	return nil
+}
+
+func (sl *StructuredLogger) Ctx(ctx context.Context) helpers.ILogger {
+	return &StructuredLoggerWithCtx{
+		slogL: sl.slogL,
+		level: sl.level,
+		ctx:   ctx,
+	}
+}
+
+func (sl *StructuredLogger) LoggerName() string {
+	return LoggerName
+}
+
+func (sl *StructuredLogger) SetLevel(level string) error {
+	l := stringToLevel(level)
+	sl.level.Set(l)
+	return nil
+}
+
+func (sl *StructuredLogger) Fatal(msg string, details ...helpers.IDetails) {
+	sl.slogL.Error(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
+	os.Exit(1)
+}
+
+func (sl *StructuredLogger) Error(msg string, details ...helpers.IDetails) {
+	sl.slogL.Error(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
+}
+
+func (sl *StructuredLogger) Warning(msg string, details ...helpers.IDetails) {
+	sl.slogL.Warn(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
+}
+
+func (sl *StructuredLogger) Success(msg string, details ...helpers.IDetails) {
+	// Success is logged as Info with a "success" attribute
+	attrs := append([]any{slog.Bool("success", true)}, detailsToAttrs(details)...)
+	sl.slogL.Info(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), attrs...)
+}
+
+func (sl *StructuredLogger) Info(msg string, details ...helpers.IDetails) {
+	sl.slogL.Info(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
+}
+
+func (sl *StructuredLogger) Debug(msg string, details ...helpers.IDetails) {
+	sl.slogL.Debug(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
+}
+
+func (sl *StructuredLogger) Start(msg string, details ...helpers.IDetails) {
+	sl.slogL.Info(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
+}
+
+func (sl *StructuredLogger) StopSuccess(msg string, details ...helpers.IDetails) {
+	attrs := append([]any{slog.Bool("success", true)}, detailsToAttrs(details)...)
+	sl.slogL.Info(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), attrs...)
+}
+
+func (sl *StructuredLogger) StopError(msg string, details ...helpers.IDetails) {
+	sl.slogL.Error(strings.ToValidUTF8(msg, helpers.InvalidUtf8ReplacementString), detailsToAttrs(details)...)
+}
+
+func (sl *StructuredLogger) TimedWrapper(funcName string, timeout time.Duration, task func()) {
+	helpers.TimedWrapperHelper(sl, funcName, timeout, task)
+}
+
+// detailsToAttrs converts helpers.IDetails to slog attributes
+func detailsToAttrs(details []helpers.IDetails) []any {
+	attrs := make([]any, 0, len(details))
+	for _, d := range details {
+		attrs = append(attrs, slog.Any(d.Key(), d.Value()))
+	}
+	return attrs
+}
+
+// stringToLevel converts string level to slog.Level
+func stringToLevel(level string) slog.Level {
+	switch level {
+	case "debug":
+		return slog.LevelDebug
+	case "info":
+		return slog.LevelInfo
+	case "success":
+		return slog.LevelInfo
+	case "warning", "warn":
+		return slog.LevelWarn
+	case "error":
+		return slog.LevelError
+	case "fatal":
+		return slog.LevelError
+	default:
+		return slog.LevelInfo
+	}
+}
+
+// levelToString converts slog.Level to string
+func levelToString(level slog.Level) string {
+	switch level {
+	case slog.LevelDebug:
+		return "debug"
+	case slog.LevelInfo:
+		return "info"
+	case slog.LevelWarn:
+		return "warning"
+	case slog.LevelError:
+		return "error"
+	default:
+		return "info"
+	}
+}
+
+// MultiHandler writes to multiple handlers
+type MultiHandler struct {
+	handlers []slog.Handler
+	level    *slog.LevelVar
+}
+
+func (h *MultiHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	return level >= h.level.Level()
+}
+
+func (h *MultiHandler) Handle(ctx context.Context, r slog.Record) error {
+	for _, handler := range h.handlers {
+		if err := handler.Handle(ctx, r); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (h *MultiHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	newHandlers := make([]slog.Handler, len(h.handlers))
+	for i, handler := range h.handlers {
+		newHandlers[i] = handler.WithAttrs(attrs)
+	}
+	return &MultiHandler{
+		handlers: newHandlers,
+		level:    h.level,
+	}
+}
+
+func (h *MultiHandler) WithGroup(name string) slog.Handler {
+	newHandlers := make([]slog.Handler, len(h.handlers))
+	for i, handler := range h.handlers {
+		newHandlers[i] = handler.WithGroup(name)
+	}
+	return &MultiHandler{
+		handlers: newHandlers,
+		level:    h.level,
+	}
+}
