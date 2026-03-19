@@ -29,6 +29,7 @@ func NewZapLogger() *ZapLogger {
 	cfg.DisableStacktrace = true
 	cfg.Encoding = "json"
 	cfg.EncoderConfig = ec
+	cfg.Sampling = nil
 
 	zapLogger, err := cfg.Build()
 	if err != nil {
