@@ -65,9 +65,6 @@ Default:
 If the logger name is empty, will try to get the logger name from the environment variable KS_LOGGER_NAME.
 If the logger level environment variable is set, will set the logger level to the value of the environment variable.
 
-InitLogger is not safe for concurrent use. It should be called once during
-program startup, before any concurrent access to L().
-
 e.g.
 InitLogger("none") -> will initialize the mock logger
 */
