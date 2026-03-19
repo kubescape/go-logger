@@ -5,6 +5,8 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
+	"sync/atomic"
 
 	"github.com/kubescape/go-logger/helpers"
 	"github.com/kubescape/go-logger/iconlogger"
@@ -23,14 +25,25 @@ const (
 	EnvLoggerName = "KS_LOGGER_NAME"
 )
 
-var l helpers.ILogger
+var (
+	// loggerPtr stores *helpers.ILogger; accessed atomically for lock-free reads.
+	loggerPtr atomic.Pointer[helpers.ILogger]
+	// initMu serializes initialization in InitLogger and the lazy path of L().
+	initMu sync.Mutex
+)
 
-// Return initialized logger. If logger not initialized, will call InitializeLogger() with the default value
+// L returns the initialized logger. If no logger has been set, it lazily initializes the default.
 func L() helpers.ILogger {
-	if l == nil {
-		InitDefaultLogger()
+	if p := loggerPtr.Load(); p != nil {
+		return *p
 	}
-	return l
+	initMu.Lock()
+	defer initMu.Unlock()
+	if p := loggerPtr.Load(); p != nil {
+		return *p
+	}
+	initLoggerInternal("")
+	return *loggerPtr.Load()
 }
 
 /*
@@ -52,37 +65,48 @@ Default:
 If the logger name is empty, will try to get the logger name from the environment variable KS_LOGGER_NAME.
 If the logger level environment variable is set, will set the logger level to the value of the environment variable.
 
+InitLogger is not safe for concurrent use. It should be called once during
+program startup, before any concurrent access to L().
+
 e.g.
 InitLogger("none") -> will initialize the mock logger
 */
 func InitLogger(loggerName string) {
+	initMu.Lock()
+	defer initMu.Unlock()
+	initLoggerInternal(loggerName)
+}
 
+func initLoggerInternal(loggerName string) {
 	if loggerName == "" {
-		// get logger name from environment variable
 		loggerName = os.Getenv(EnvLoggerName)
 	}
 
+	var newLogger helpers.ILogger
 	switch strings.ToLower(loggerName) {
 	case structuredlogger.LoggerName:
-		l = structuredlogger.NewStructuredLogger()
+		newLogger = structuredlogger.NewStructuredLogger()
 	case zaplogger.LoggerName:
-		l = zaplogger.NewZapLogger()
+		newLogger = zaplogger.NewZapLogger()
 	case prettylogger.LoggerName, "colorful":
-		l = prettylogger.NewPrettyLogger()
+		newLogger = prettylogger.NewPrettyLogger()
 	case iconlogger.LoggerName, "emoji":
-		l = iconlogger.NewIconLogger()
+		newLogger = iconlogger.NewIconLogger()
 	case nonelogger.LoggerName, "mock", "empty", "ignore":
-		l = nonelogger.NewNoneLogger()
+		newLogger = nonelogger.NewNoneLogger()
 	default:
-		l = prettylogger.NewPrettyLogger()
+		newLogger = prettylogger.NewPrettyLogger()
 	}
 
-	// set logger level from environment variable, if empty, will use the default value as set by the package
 	if lev := os.Getenv(EnvLoggerLevel); lev != "" {
-		if err := l.SetLevel(lev); err != nil {
-			l.Warning("failed to set logger level", helpers.String("environment", EnvLoggerLevel), helpers.Error(err))
+		if err := newLogger.SetLevel(lev); err != nil {
+			newLogger.Warning("failed to set logger level", helpers.String("environment", EnvLoggerLevel), helpers.Error(err))
 		}
 	}
+
+	// Caller must hold initMu.
+	iface := helpers.ILogger(newLogger)
+	loggerPtr.Store(&iface)
 }
 
 func InitDefaultLogger() {
