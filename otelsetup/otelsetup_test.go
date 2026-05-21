@@ -2,6 +2,7 @@ package otelsetup
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -82,3 +83,40 @@ func TestRingBufferLogProcessor_WrapsCorrectly(t *testing.T) {
 	p.mu.Unlock()
 	assert.Equal(t, len(p.buf), sz, "buffer size must be capped at ring capacity")
 }
+
+func TestRingBufferLogProcessor_FlushClearsBuffer(t *testing.T) {
+	p := &RingBufferLogProcessor{}
+	ctx := context.Background()
+	r := new(sdklog.Record)
+	for range 10 {
+		_ = p.OnEmit(ctx, r)
+	}
+
+	counter := &recordCounter{}
+	provider := sdklog.NewLoggerProvider(sdklog.WithProcessor(counter))
+	l := provider.Logger("test")
+
+	p.FlushToBackend(ctx, l)
+	assert.Equal(t, int32(10), counter.n.Load(), "flush must re-emit all buffered records")
+
+	p.mu.Lock()
+	sz := p.size
+	p.mu.Unlock()
+	assert.Equal(t, 0, sz, "buffer must be empty after flush")
+
+	// Second flush must emit nothing
+	p.FlushToBackend(ctx, l)
+	assert.Equal(t, int32(10), counter.n.Load(), "second flush must not re-export already-flushed records")
+}
+
+// recordCounter counts OnEmit calls via a real sdklog.Processor so we can
+// use provider.Logger() — otellog.Logger uses the embedded interface pattern
+// and cannot be implemented externally.
+type recordCounter struct {
+	n atomic.Int32
+}
+
+func (c *recordCounter) OnEmit(_ context.Context, _ *sdklog.Record) error          { c.n.Add(1); return nil }
+func (c *recordCounter) Enabled(_ context.Context, _ sdklog.EnabledParameters) bool { return true }
+func (c *recordCounter) Shutdown(_ context.Context) error                           { return nil }
+func (c *recordCounter) ForceFlush(_ context.Context) error                         { return nil }

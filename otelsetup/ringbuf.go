@@ -12,19 +12,25 @@ import (
 // operators can flush them retroactively via the debug HTTP listener after a
 // suspicious event is observed.
 type RingBufferLogProcessor struct {
-	buf  [7500]sdklog.Record
-	head int
-	tail int
-	size int
-	mu   sync.Mutex
+	buf      [7500]sdklog.Record
+	head     int
+	tail     int
+	size     int
+	flushing bool // true while FlushToBackend is re-emitting; drops incoming records to break the loop
+	mu       sync.Mutex
 }
 
 // OnEmit clones the record (sdk/log Records are not concurrent-safe — the
 // upstream BatchProcessor may mutate them after our return) and inserts it
-// into the ring buffer.
+// into the ring buffer. Records are dropped silently while a flush is in
+// progress to prevent re-emitted records from looping back into the buffer.
 func (p *RingBufferLogProcessor) OnEmit(_ context.Context, r *sdklog.Record) error {
 	clone := r.Clone()
 	p.mu.Lock()
+	if p.flushing {
+		p.mu.Unlock()
+		return nil
+	}
 	p.buf[p.head] = clone
 	p.head = (p.head + 1) % len(p.buf)
 	if p.size < len(p.buf) {
@@ -48,15 +54,30 @@ func (p *RingBufferLogProcessor) Shutdown(_ context.Context) error { return nil 
 // ForceFlush is a no-op for the same reason.
 func (p *RingBufferLogProcessor) ForceFlush(_ context.Context) error { return nil }
 
-// FlushToBackend re-emits buffered records through the provided log.Logger so
-// the LoggerProvider's existing BatchProcessor handles delivery.
+// FlushToBackend drains the ring buffer and re-emits the captured records
+// through the provided log.Logger so the LoggerProvider's existing
+// BatchProcessor handles delivery. The buffer is cleared atomically before
+// re-emitting, and incoming records are gated during the flush so re-emitted
+// records do not loop back into the buffer — a second call exports only
+// records that arrived after the first flush completed.
 func (p *RingBufferLogProcessor) FlushToBackend(ctx context.Context, l otellog.Logger) {
 	p.mu.Lock()
 	records := make([]sdklog.Record, p.size)
 	for i := range p.size {
 		records[i] = p.buf[(p.tail+i)%len(p.buf)]
 	}
+	p.head = 0
+	p.tail = 0
+	p.size = 0
+	p.flushing = true
 	p.mu.Unlock()
+
+	defer func() {
+		p.mu.Lock()
+		p.flushing = false
+		p.mu.Unlock()
+	}()
+
 	for i := range records {
 		l.Emit(ctx, sdkRecordToLogRecord(&records[i]))
 	}

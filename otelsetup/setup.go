@@ -178,8 +178,8 @@ func InitProviders(ctx context.Context, cfg ProviderConfig) (shutdown func(conte
 		}()
 	}
 
-	shutdown = func(_ context.Context) error {
-		shutdownCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	shutdown = func(ctx context.Context) error {
+		shutdownCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 		defer cancel()
 		var tpErr, logErr, mpErr, debugErr error
 		if tp != nil {
