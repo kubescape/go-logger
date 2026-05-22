@@ -69,6 +69,52 @@ func TestInitProviders_ARMOWithoutCreds_ReturnsNoop(t *testing.T) {
 	assert.NoError(t, shutdown(context.Background()))
 }
 
+// --- buildAuthHeaders + grpcOpts (AC8 / AC9) ---
+
+func TestBuildAuthHeaders_ARMO_ContainsBothKeys(t *testing.T) {
+	h := buildAuthHeaders(true, "my-key", "my-guid")
+	assert.Equal(t, "my-key", h["X-API-Key"], "AC8: X-API-Key must be set for ARMO endpoint")
+	assert.Equal(t, "my-guid", h["X-Customer-GUID"], "AC8: X-Customer-GUID must be set for ARMO endpoint")
+}
+
+func TestBuildAuthHeaders_NonARMO_ReturnsNil(t *testing.T) {
+	assert.Nil(t, buildAuthHeaders(false, "my-key", "my-guid"), "AC9: no auth headers for non-ARMO endpoint")
+}
+
+// TestGrpcTraceOpts_HeadersInjectedForARMO verifies the option slice includes
+// WithHeaders when ARMO auth headers are provided (AC8).
+func TestGrpcTraceOpts_HeadersInjectedForARMO(t *testing.T) {
+	opts := grpcTraceOpts("otel.armosec.io:4317", buildAuthHeaders(true, "key", "guid"))
+	// WithEndpoint + WithInsecure + WithHeaders = 3
+	assert.Len(t, opts, 3, "AC8: must include WithHeaders for ARMO endpoint")
+}
+
+// TestGrpcTraceOpts_NoHeadersForNonARMO verifies no WithHeaders option is added
+// for non-ARMO endpoints (AC9).
+func TestGrpcTraceOpts_NoHeadersForNonARMO(t *testing.T) {
+	opts := grpcTraceOpts("customer-collector:4317", nil)
+	// WithEndpoint + WithInsecure = 2
+	assert.Len(t, opts, 2, "AC9: must not include WithHeaders for non-ARMO endpoint")
+}
+
+func TestGrpcLogOpts_HeadersInjectedForARMO(t *testing.T) {
+	opts := grpcLogOpts("otel.armosec.io:4317", buildAuthHeaders(true, "key", "guid"))
+	assert.Len(t, opts, 3, "AC8: grpcLogOpts must include WithHeaders for ARMO endpoint")
+}
+
+func TestGrpcMetricOpts_HeadersInjectedForARMO(t *testing.T) {
+	opts := grpcMetricOpts("otel.armosec.io:4317", buildAuthHeaders(true, "key", "guid"))
+	assert.Len(t, opts, 3, "AC8: grpcMetricOpts must include WithHeaders for ARMO endpoint")
+}
+
+// TestGrpcTraceOpts_HTTPSEndpoint verifies that https:// endpoints use
+// WithEndpointURL and skip WithInsecure.
+func TestGrpcTraceOpts_HTTPSEndpoint(t *testing.T) {
+	opts := grpcTraceOpts("https://otel.armosec.io:4317", nil)
+	// WithEndpointURL only (WithInsecure skipped for https) = 1
+	assert.Len(t, opts, 1)
+}
+
 // --- RingBufferLogProcessor ---
 
 func TestRingBufferLogProcessor_WrapsCorrectly(t *testing.T) {
