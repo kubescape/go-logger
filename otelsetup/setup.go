@@ -50,6 +50,11 @@ type ProviderConfig struct {
 	ClusterName    string
 	AccountID      string // e.g. clusterData.AccountID
 	AccessKey      string // e.g. from /etc/credentials
+	// DebugListener enables the ring-buffer flush endpoint on localhost (OTEL_DEBUG_PORT,
+	// default 6062). Callers should set this when the process log level is debug — it is
+	// not intended to be on permanently, since the ring buffer only captures pre-export
+	// startup logs.
+	DebugListener bool
 }
 
 // InitProviders initialises the TracerProvider, LoggerProvider, and
@@ -142,9 +147,9 @@ func InitProviders(ctx context.Context, cfg ProviderConfig) (shutdown func(conte
 		otel.SetMeterProvider(mp)
 	}
 
-	// --- Debug HTTP listener (gated by ENABLE_DEBUG_LISTENER=true) ---
+	// --- Debug HTTP listener (gated by cfg.DebugListener) ---
 	var debugSrv *http.Server
-	if os.Getenv("ENABLE_DEBUG_LISTENER") == "true" && logProvider != nil {
+	if cfg.DebugListener && logProvider != nil {
 		port := coalesce(os.Getenv("OTEL_DEBUG_PORT"), "6062")
 		l := logProvider.Logger(cfg.ServiceName + "/ringbuf")
 		mux := http.NewServeMux()
