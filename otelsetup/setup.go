@@ -24,6 +24,8 @@ import (
 	"strings"
 	"time"
 
+	gologger "github.com/kubescape/go-logger"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -50,11 +52,6 @@ type ProviderConfig struct {
 	ClusterName    string
 	AccountID      string // e.g. clusterData.AccountID
 	AccessKey      string // e.g. from /etc/credentials
-	// DebugListener enables the ring-buffer flush endpoint on localhost (OTEL_DEBUG_PORT,
-	// default 6062). Callers should set this when the process log level is debug — it is
-	// not intended to be on permanently, since the ring buffer only captures pre-export
-	// startup logs.
-	DebugListener bool
 }
 
 // InitProviders initialises the TracerProvider, LoggerProvider, and
@@ -147,9 +144,9 @@ func InitProviders(ctx context.Context, cfg ProviderConfig) (shutdown func(conte
 		otel.SetMeterProvider(mp)
 	}
 
-	// --- Debug HTTP listener (gated by cfg.DebugListener) ---
+	// --- Debug HTTP listener (active when KS_LOGGER_LEVEL=debug) ---
 	var debugSrv *http.Server
-	if cfg.DebugListener && logProvider != nil {
+	if os.Getenv(gologger.EnvLoggerLevel) == "debug" && logProvider != nil {
 		port := coalesce(os.Getenv("OTEL_DEBUG_PORT"), "6062")
 		l := logProvider.Logger(cfg.ServiceName + "/ringbuf")
 		mux := http.NewServeMux()
