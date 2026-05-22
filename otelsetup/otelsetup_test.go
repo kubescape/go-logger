@@ -9,36 +9,50 @@ import (
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 )
 
-// --- isARMOEndpoint ---
+// --- buildAuthHeaders (AC8 / AC9) ---
 
-func TestIsARMOEndpoint_ExactMatch(t *testing.T) {
-	t.Setenv("ARMO_OTEL_AUTH", "")
-	assert.True(t, isARMOEndpoint("otel.armosec.io:4317"))
+func TestBuildAuthHeaders_WithCredentials(t *testing.T) {
+	h := buildAuthHeaders("my-key", "my-guid")
+	assert.Equal(t, "my-key", h["X-API-Key"], "X-API-Key must be set when accessKey is non-empty")
+	assert.Equal(t, "my-guid", h["X-Customer-GUID"], "X-Customer-GUID must be set when accessKey is non-empty")
 }
 
-func TestIsARMOEndpoint_SubdomainNotMatched(t *testing.T) {
-	t.Setenv("ARMO_OTEL_AUTH", "")
-	assert.False(t, isARMOEndpoint("evil.otel.armosec.io:4317"))
+func TestBuildAuthHeaders_NoCredentials_ReturnsNil(t *testing.T) {
+	assert.Nil(t, buildAuthHeaders("", "my-guid"), "no headers when accessKey is empty")
 }
 
-func TestIsARMOEndpoint_CustomerCollector(t *testing.T) {
-	t.Setenv("ARMO_OTEL_AUTH", "")
-	assert.False(t, isARMOEndpoint("customer-collector:4317"))
+// TestGrpcTraceOpts_HeadersInjectedWhenCredsPresent verifies the option slice
+// includes WithHeaders when credentials are supplied (AC8).
+func TestGrpcTraceOpts_HeadersInjectedWhenCredsPresent(t *testing.T) {
+	opts := grpcTraceOpts("collector:4317", buildAuthHeaders("key", "guid"))
+	// WithEndpoint + WithInsecure + WithHeaders = 3
+	assert.Len(t, opts, 3, "must include WithHeaders when credentials present")
 }
 
-func TestIsARMOEndpoint_EmptyEndpoint(t *testing.T) {
-	t.Setenv("ARMO_OTEL_AUTH", "")
-	assert.False(t, isARMOEndpoint(""))
+// TestGrpcTraceOpts_NoHeadersWhenNoCreds verifies no WithHeaders option is
+// added when no credentials are configured (AC9).
+func TestGrpcTraceOpts_NoHeadersWhenNoCreds(t *testing.T) {
+	opts := grpcTraceOpts("collector:4317", nil)
+	// WithEndpoint + WithInsecure = 2
+	assert.Len(t, opts, 2, "must not include WithHeaders when no credentials")
 }
 
-func TestIsARMOEndpoint_ForceAuthEnvVar(t *testing.T) {
-	t.Setenv("ARMO_OTEL_AUTH", "true")
-	assert.True(t, isARMOEndpoint("customer-collector:4317"))
+func TestGrpcLogOpts_HeadersInjectedWhenCredsPresent(t *testing.T) {
+	opts := grpcLogOpts("collector:4317", buildAuthHeaders("key", "guid"))
+	assert.Len(t, opts, 3)
 }
 
-func TestIsARMOEndpoint_WithScheme(t *testing.T) {
-	t.Setenv("ARMO_OTEL_AUTH", "")
-	assert.True(t, isARMOEndpoint("https://otel.armosec.io:4317"))
+func TestGrpcMetricOpts_HeadersInjectedWhenCredsPresent(t *testing.T) {
+	opts := grpcMetricOpts("collector:4317", buildAuthHeaders("key", "guid"))
+	assert.Len(t, opts, 3)
+}
+
+// TestGrpcTraceOpts_HTTPSEndpoint verifies https:// uses WithEndpointURL and
+// skips WithInsecure.
+func TestGrpcTraceOpts_HTTPSEndpoint(t *testing.T) {
+	opts := grpcTraceOpts("https://collector:4317", nil)
+	// WithEndpointURL only (WithInsecure skipped for https) = 1
+	assert.Len(t, opts, 1)
 }
 
 // --- InitProviders no-op path ---
@@ -52,67 +66,6 @@ func TestInitProviders_NoEndpoint_ReturnsNoop(t *testing.T) {
 	shutdown, err := InitProviders(context.Background(), ProviderConfig{ServiceName: "test"})
 	assert.NoError(t, err)
 	assert.NoError(t, shutdown(context.Background()))
-}
-
-func TestInitProviders_ARMOWithoutCreds_ReturnsNoop(t *testing.T) {
-	t.Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "otel.armosec.io:4317")
-	t.Setenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "")
-	t.Setenv("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", "")
-	t.Setenv("OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "")
-	t.Setenv("ARMO_OTEL_AUTH", "")
-
-	shutdown, err := InitProviders(context.Background(), ProviderConfig{
-		ServiceName: "test",
-		AccessKey:   "", // no credentials
-	})
-	assert.NoError(t, err)
-	assert.NoError(t, shutdown(context.Background()))
-}
-
-// --- buildAuthHeaders + grpcOpts (AC8 / AC9) ---
-
-func TestBuildAuthHeaders_ARMO_ContainsBothKeys(t *testing.T) {
-	h := buildAuthHeaders(true, "my-key", "my-guid")
-	assert.Equal(t, "my-key", h["X-API-Key"], "AC8: X-API-Key must be set for ARMO endpoint")
-	assert.Equal(t, "my-guid", h["X-Customer-GUID"], "AC8: X-Customer-GUID must be set for ARMO endpoint")
-}
-
-func TestBuildAuthHeaders_NonARMO_ReturnsNil(t *testing.T) {
-	assert.Nil(t, buildAuthHeaders(false, "my-key", "my-guid"), "AC9: no auth headers for non-ARMO endpoint")
-}
-
-// TestGrpcTraceOpts_HeadersInjectedForARMO verifies the option slice includes
-// WithHeaders when ARMO auth headers are provided (AC8).
-func TestGrpcTraceOpts_HeadersInjectedForARMO(t *testing.T) {
-	opts := grpcTraceOpts("otel.armosec.io:4317", buildAuthHeaders(true, "key", "guid"))
-	// WithEndpoint + WithInsecure + WithHeaders = 3
-	assert.Len(t, opts, 3, "AC8: must include WithHeaders for ARMO endpoint")
-}
-
-// TestGrpcTraceOpts_NoHeadersForNonARMO verifies no WithHeaders option is added
-// for non-ARMO endpoints (AC9).
-func TestGrpcTraceOpts_NoHeadersForNonARMO(t *testing.T) {
-	opts := grpcTraceOpts("customer-collector:4317", nil)
-	// WithEndpoint + WithInsecure = 2
-	assert.Len(t, opts, 2, "AC9: must not include WithHeaders for non-ARMO endpoint")
-}
-
-func TestGrpcLogOpts_HeadersInjectedForARMO(t *testing.T) {
-	opts := grpcLogOpts("otel.armosec.io:4317", buildAuthHeaders(true, "key", "guid"))
-	assert.Len(t, opts, 3, "AC8: grpcLogOpts must include WithHeaders for ARMO endpoint")
-}
-
-func TestGrpcMetricOpts_HeadersInjectedForARMO(t *testing.T) {
-	opts := grpcMetricOpts("otel.armosec.io:4317", buildAuthHeaders(true, "key", "guid"))
-	assert.Len(t, opts, 3, "AC8: grpcMetricOpts must include WithHeaders for ARMO endpoint")
-}
-
-// TestGrpcTraceOpts_HTTPSEndpoint verifies that https:// endpoints use
-// WithEndpointURL and skip WithInsecure.
-func TestGrpcTraceOpts_HTTPSEndpoint(t *testing.T) {
-	opts := grpcTraceOpts("https://otel.armosec.io:4317", nil)
-	// WithEndpointURL only (WithInsecure skipped for https) = 1
-	assert.Len(t, opts, 1)
 }
 
 // --- RingBufferLogProcessor ---
@@ -162,7 +115,7 @@ type recordCounter struct {
 	n atomic.Int32
 }
 
-func (c *recordCounter) OnEmit(_ context.Context, _ *sdklog.Record) error          { c.n.Add(1); return nil }
+func (c *recordCounter) OnEmit(_ context.Context, _ *sdklog.Record) error           { c.n.Add(1); return nil }
 func (c *recordCounter) Enabled(_ context.Context, _ sdklog.EnabledParameters) bool { return true }
-func (c *recordCounter) Shutdown(_ context.Context) error                           { return nil }
-func (c *recordCounter) ForceFlush(_ context.Context) error                         { return nil }
+func (c *recordCounter) Shutdown(_ context.Context) error                            { return nil }
+func (c *recordCounter) ForceFlush(_ context.Context) error                          { return nil }

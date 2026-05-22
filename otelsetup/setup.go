@@ -1,8 +1,13 @@
 // Package otelsetup initialises OpenTelemetry providers (Tracer + Logger +
 // Meter) for a kubescape service. It owns endpoint resolution, per-signal
-// exporter gating, ARMO authentication header injection, TLS/plaintext
-// detection, and the in-memory ring-buffer log processor used for retroactive
-// log export.
+// exporter gating, credential header injection, TLS/plaintext detection, and
+// the in-memory ring-buffer log processor used for retroactive log export.
+//
+// Auth header policy: X-API-Key and X-Customer-GUID are injected whenever
+// cfg.AccessKey is non-empty, regardless of the endpoint hostname. This is the
+// same credential-presence gate used by the SBOM scan-failure reporter and
+// avoids fragile hostname matching that breaks on domain changes or
+// self-hosted collector deployments.
 //
 // Ordering constraint: callers MUST invoke InitProviders before any code that
 // captures global.GetLoggerProvider() at construction time (e.g. the
@@ -15,7 +20,6 @@ import (
 	"errors"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -36,7 +40,7 @@ import (
 )
 
 // ProviderConfig carries the inputs InitProviders needs to construct OTEL
-// providers and (when targeting ARMO) authenticate with the back-office.
+// providers and authenticate with the back-office when credentials are present.
 type ProviderConfig struct {
 	ServiceName    string
 	ServiceVersion string
@@ -50,8 +54,9 @@ type ProviderConfig struct {
 
 // InitProviders initialises the TracerProvider, LoggerProvider, and
 // MeterProvider. It returns a combined shutdown func that flushes batches with
-// a 5s timeout. When OTEL_EXPORTER_OTLP_ENDPOINT is unset or targets ARMO
-// without credentials, providers fall back to no-op (no panics, no log noise).
+// a 5s timeout. When OTEL_EXPORTER_OTLP_ENDPOINT is unset, providers fall back
+// to no-op (no panics, no log noise). When cfg.AccessKey is non-empty,
+// X-API-Key and X-Customer-GUID headers are attached to every outbound RPC.
 func InitProviders(ctx context.Context, cfg ProviderConfig) (shutdown func(context.Context) error, err error) {
 	applyLegacyEnvAliases()
 
@@ -67,16 +72,7 @@ func InitProviders(ctx context.Context, cfg ProviderConfig) (shutdown func(conte
 		return func(context.Context) error { return nil }, nil
 	}
 
-	traceIsARMO := traceEndpoint != "" && isARMOEndpoint(traceEndpoint)
-	logIsARMO := logEndpoint != "" && isARMOEndpoint(logEndpoint)
-	metricIsARMO := metricEndpoint != "" && isARMOEndpoint(metricEndpoint)
-
-	if (traceIsARMO || logIsARMO || metricIsARMO) && cfg.AccessKey == "" {
-		slog.Warn("otelsetup: ARMO endpoint configured but no credentials, telemetry disabled")
-		otel.SetTracerProvider(tracenoop.NewTracerProvider())
-		otel.SetTextMapPropagator(propagation.TraceContext{})
-		return func(context.Context) error { return nil }, nil
-	}
+	authHeaders := buildAuthHeaders(cfg.AccessKey, cfg.AccountID)
 
 	res, err := resource.Merge(resource.Default(), resource.NewSchemaless(
 		semconv.ServiceName(cfg.ServiceName),
@@ -93,7 +89,7 @@ func InitProviders(ctx context.Context, cfg ProviderConfig) (shutdown func(conte
 	// --- TracerProvider ---
 	var tp *sdktrace.TracerProvider
 	if traceEndpoint != "" {
-		spanExporter, err := otlptracegrpc.New(ctx, grpcTraceOpts(traceEndpoint, buildAuthHeaders(traceIsARMO, cfg.AccessKey, cfg.AccountID))...)
+		spanExporter, err := otlptracegrpc.New(ctx, grpcTraceOpts(traceEndpoint, authHeaders)...)
 		if err != nil {
 			return nil, err
 		}
@@ -111,7 +107,7 @@ func InitProviders(ctx context.Context, cfg ProviderConfig) (shutdown func(conte
 	ringBuf := &RingBufferLogProcessor{}
 	var logProvider *sdklog.LoggerProvider
 	if logEndpoint != "" {
-		logExporter, err := otlploggrpc.New(ctx, grpcLogOpts(logEndpoint, buildAuthHeaders(logIsARMO, cfg.AccessKey, cfg.AccountID))...)
+		logExporter, err := otlploggrpc.New(ctx, grpcLogOpts(logEndpoint, authHeaders)...)
 		if err != nil {
 			if tp != nil {
 				_ = tp.Shutdown(ctx)
@@ -129,7 +125,7 @@ func InitProviders(ctx context.Context, cfg ProviderConfig) (shutdown func(conte
 	// --- MeterProvider ---
 	var mp *sdkmetric.MeterProvider
 	if metricEndpoint != "" {
-		metricExporter, err := otlpmetricgrpc.New(ctx, grpcMetricOpts(metricEndpoint, buildAuthHeaders(metricIsARMO, cfg.AccessKey, cfg.AccountID))...)
+		metricExporter, err := otlpmetricgrpc.New(ctx, grpcMetricOpts(metricEndpoint, authHeaders)...)
 		if err != nil {
 			if tp != nil {
 				_ = tp.Shutdown(ctx)
@@ -248,31 +244,11 @@ func applyLegacyEnvAliases() {
 	}
 }
 
-// isARMOEndpoint reports whether the resolved endpoint targets the ARMO
-// back-office. Uses net/url to extract the hostname so a collector named
-// otel.armosec.io.evil.example cannot trick us into shipping ARMO credentials.
-func isARMOEndpoint(rawEndpoint string) bool {
-	if os.Getenv("ARMO_OTEL_AUTH") == "true" {
-		return true
-	}
-	if rawEndpoint == "" {
-		return false
-	}
-	s := rawEndpoint
-	if !strings.Contains(s, "://") {
-		s = "//" + s
-	}
-	u, err := url.Parse(s)
-	if err != nil {
-		return false
-	}
-	return u.Hostname() == "otel.armosec.io"
-}
-
-// buildAuthHeaders returns ARMO authentication headers when active is true.
-// Returns nil (no headers) for non-ARMO endpoints so callers can branch on len(headers) > 0.
-func buildAuthHeaders(active bool, accessKey, accountID string) map[string]string {
-	if !active {
+// buildAuthHeaders returns credential headers when accessKey is non-empty.
+// Headers are injected for any endpoint, consistent with the credential-presence
+// gate used by the rest of the codebase (e.g. SBOM scan-failure reporter).
+func buildAuthHeaders(accessKey, accountID string) map[string]string {
+	if accessKey == "" {
 		return nil
 	}
 	return map[string]string{
