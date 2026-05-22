@@ -24,6 +24,8 @@ import (
 	"strings"
 	"time"
 
+	gologger "github.com/kubescape/go-logger"
+
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc"
 	"go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc"
@@ -142,9 +144,9 @@ func InitProviders(ctx context.Context, cfg ProviderConfig) (shutdown func(conte
 		otel.SetMeterProvider(mp)
 	}
 
-	// --- Debug HTTP listener (gated by ENABLE_DEBUG_LISTENER=true) ---
+	// --- Debug HTTP listener (active when KS_LOGGER_LEVEL=debug) ---
 	var debugSrv *http.Server
-	if os.Getenv("ENABLE_DEBUG_LISTENER") == "true" && logProvider != nil {
+	if os.Getenv(gologger.EnvLoggerLevel) == "debug" && logProvider != nil {
 		port := coalesce(os.Getenv("OTEL_DEBUG_PORT"), "6062")
 		l := logProvider.Logger(cfg.ServiceName + "/ringbuf")
 		mux := http.NewServeMux()
