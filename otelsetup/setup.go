@@ -78,16 +78,6 @@ func InitProviders(ctx context.Context, cfg ProviderConfig) (shutdown func(conte
 		return func(context.Context) error { return nil }, nil
 	}
 
-	armoHeaders := func(active bool) map[string]string {
-		if !active {
-			return nil
-		}
-		return map[string]string{
-			"X-API-Key":       cfg.AccessKey,
-			"X-Customer-GUID": cfg.AccountID,
-		}
-	}
-
 	res, err := resource.Merge(resource.Default(), resource.NewSchemaless(
 		semconv.ServiceName(cfg.ServiceName),
 		semconv.ServiceVersion(cfg.ServiceVersion),
@@ -103,7 +93,7 @@ func InitProviders(ctx context.Context, cfg ProviderConfig) (shutdown func(conte
 	// --- TracerProvider ---
 	var tp *sdktrace.TracerProvider
 	if traceEndpoint != "" {
-		spanExporter, err := otlptracegrpc.New(ctx, grpcTraceOpts(traceEndpoint, armoHeaders(traceIsARMO))...)
+		spanExporter, err := otlptracegrpc.New(ctx, grpcTraceOpts(traceEndpoint, buildAuthHeaders(traceIsARMO, cfg.AccessKey, cfg.AccountID))...)
 		if err != nil {
 			return nil, err
 		}
@@ -121,7 +111,7 @@ func InitProviders(ctx context.Context, cfg ProviderConfig) (shutdown func(conte
 	ringBuf := &RingBufferLogProcessor{}
 	var logProvider *sdklog.LoggerProvider
 	if logEndpoint != "" {
-		logExporter, err := otlploggrpc.New(ctx, grpcLogOpts(logEndpoint, armoHeaders(logIsARMO))...)
+		logExporter, err := otlploggrpc.New(ctx, grpcLogOpts(logEndpoint, buildAuthHeaders(logIsARMO, cfg.AccessKey, cfg.AccountID))...)
 		if err != nil {
 			if tp != nil {
 				_ = tp.Shutdown(ctx)
@@ -139,7 +129,7 @@ func InitProviders(ctx context.Context, cfg ProviderConfig) (shutdown func(conte
 	// --- MeterProvider ---
 	var mp *sdkmetric.MeterProvider
 	if metricEndpoint != "" {
-		metricExporter, err := otlpmetricgrpc.New(ctx, grpcMetricOpts(metricEndpoint, armoHeaders(metricIsARMO))...)
+		metricExporter, err := otlpmetricgrpc.New(ctx, grpcMetricOpts(metricEndpoint, buildAuthHeaders(metricIsARMO, cfg.AccessKey, cfg.AccountID))...)
 		if err != nil {
 			if tp != nil {
 				_ = tp.Shutdown(ctx)
@@ -277,6 +267,18 @@ func isARMOEndpoint(rawEndpoint string) bool {
 		return false
 	}
 	return u.Hostname() == "otel.armosec.io"
+}
+
+// buildAuthHeaders returns ARMO authentication headers when active is true.
+// Returns nil (no headers) for non-ARMO endpoints so callers can branch on len(headers) > 0.
+func buildAuthHeaders(active bool, accessKey, accountID string) map[string]string {
+	if !active {
+		return nil
+	}
+	return map[string]string{
+		"X-API-Key":       accessKey,
+		"X-Customer-GUID": accountID,
+	}
 }
 
 func coalesce(values ...string) string {

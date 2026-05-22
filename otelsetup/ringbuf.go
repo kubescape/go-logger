@@ -42,10 +42,16 @@ func (p *RingBufferLogProcessor) OnEmit(_ context.Context, r *sdklog.Record) err
 	return nil
 }
 
-// Enabled always returns true — the ring buffer captures every record so a
-// retroactive flush has the full context.
-func (p *RingBufferLogProcessor) Enabled(_ context.Context, _ sdklog.EnabledParameters) bool {
-	return true
+// Enabled returns true for Info-level and above. Debug records are excluded
+// to keep the ~1.5 MB memory bound realistic and to avoid storing high-volume
+// hot-path debug output.
+// NOTE: full package-level filtering (allowlist containerprofilemanager,
+// sbommanager, objectcache, exporters; exclude rulemanager, containerwatcher)
+// requires implementing the ring buffer as a slog.Handler so Enabled fires
+// before the slog record is constructed. The severity gate here is the
+// best approximation available at the OTEL processor layer.
+func (p *RingBufferLogProcessor) Enabled(_ context.Context, params sdklog.EnabledParameters) bool {
+	return params.Severity >= otellog.SeverityInfo1
 }
 
 // Shutdown is a no-op — the buffer is in-memory only.
