@@ -3,7 +3,7 @@
 // exporter gating, credential header injection, TLS/plaintext detection, and
 // the in-memory ring-buffer log processor used for retroactive log export.
 //
-// Auth header policy: X-API-Key and X-Customer-GUID are injected whenever
+// Auth header policy: X-API-KEY and X-API-ACCOUNT are injected whenever
 // cfg.AccessKey is non-empty, regardless of the endpoint hostname. This is the
 // same credential-presence gate used by the SBOM scan-failure reporter and
 // avoids fragile hostname matching that breaks on domain changes or
@@ -58,7 +58,7 @@ type ProviderConfig struct {
 // MeterProvider. It returns a combined shutdown func that flushes batches with
 // a 5s timeout. When OTEL_EXPORTER_OTLP_ENDPOINT is unset, providers fall back
 // to no-op (no panics, no log noise). When cfg.AccessKey is non-empty,
-// X-API-Key and X-Customer-GUID headers are attached to every outbound RPC.
+// X-API-KEY and X-API-ACCOUNT headers are attached to every outbound RPC.
 func InitProviders(ctx context.Context, cfg ProviderConfig) (shutdown func(context.Context) error, err error) {
 	applyLegacyEnvAliases()
 
@@ -254,8 +254,8 @@ func buildAuthHeaders(accessKey, accountID string) map[string]string {
 		return nil
 	}
 	return map[string]string{
-		"X-API-Key":       accessKey,
-		"X-Customer-GUID": accountID,
+		"X-API-KEY":     accessKey,
+		"X-API-ACCOUNT": accountID,
 	}
 }
 

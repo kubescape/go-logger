@@ -13,8 +13,8 @@ import (
 
 func TestBuildAuthHeaders_WithCredentials(t *testing.T) {
 	h := buildAuthHeaders("my-key", "my-guid")
-	assert.Equal(t, "my-key", h["X-API-Key"], "X-API-Key must be set when accessKey is non-empty")
-	assert.Equal(t, "my-guid", h["X-Customer-GUID"], "X-Customer-GUID must be set when accessKey is non-empty")
+	assert.Equal(t, "my-key", h["X-API-KEY"], "X-API-KEY must be set when accessKey is non-empty")
+	assert.Equal(t, "my-guid", h["X-API-ACCOUNT"], "X-API-ACCOUNT must be set when accessKey is non-empty")
 }
 
 func TestBuildAuthHeaders_NoCredentials_ReturnsNil(t *testing.T) {
