@@ -36,6 +36,9 @@ func (il *IconLogger) StopSpinner(message string) {
 }
 
 func (il *IconLogger) PauseSpinner() {
+	il.mutex.Lock()
+	defer il.mutex.Unlock()
+
 	if il.spinner == nil || !il.spinner.Active() {
 		return
 	}
@@ -44,6 +47,9 @@ func (il *IconLogger) PauseSpinner() {
 }
 
 func (il *IconLogger) ResumeSpinner() {
+	il.mutex.Lock()
+	defer il.mutex.Unlock()
+
 	if il.spinner == nil || il.spinner.Active() {
 		return
 	}
