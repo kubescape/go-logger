@@ -4,6 +4,7 @@ import (
 	"context"
 	"sync"
 
+	"go.opentelemetry.io/otel/attribute"
 	otellog "go.opentelemetry.io/otel/log"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
 )
@@ -97,7 +98,7 @@ func sdkRecordToLogRecord(r *sdklog.Record) otellog.Record {
 	out.SetSeverityText(r.SeverityText())
 	out.SetBody(r.Body())
 	out.SetEventName(r.EventName())
-	r.WalkAttributes(func(kv otellog.KeyValue) bool {
+	r.WalkAttributes(func(kv attribute.KeyValue) bool {
 		out.AddAttributes(kv)
 		return true
 	})
