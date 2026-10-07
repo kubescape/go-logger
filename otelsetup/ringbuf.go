@@ -7,6 +7,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	otellog "go.opentelemetry.io/otel/log"
 	sdklog "go.opentelemetry.io/otel/sdk/log"
+	"go.opentelemetry.io/otel/trace"
 )
 
 // RingBufferLogProcessor keeps the last 7500 log records in memory so
@@ -86,7 +87,17 @@ func (p *RingBufferLogProcessor) FlushToBackend(ctx context.Context, l otellog.L
 	}()
 
 	for i := range records {
-		l.Emit(ctx, sdkRecordToLogRecord(&records[i]))
+		rec := &records[i]
+		emitCtx := ctx
+		if rec.TraceID().IsValid() {
+			sc := trace.NewSpanContext(trace.SpanContextConfig{
+				TraceID:    rec.TraceID(),
+				SpanID:     rec.SpanID(),
+				TraceFlags: rec.TraceFlags(),
+			})
+			emitCtx = trace.ContextWithSpanContext(ctx, sc)
+		}
+		l.Emit(emitCtx, sdkRecordToLogRecord(rec))
 	}
 }
 

@@ -53,7 +53,7 @@ func TestInitProviders_LogBatchExport(t *testing.T) {
 		otel.SetTracerProvider(previousTraces)
 		otel.SetTextMapPropagator(previousPropagator)
 	})
-	for _, key := range []string{"OTEL_EXPORTER_OTLP_ENDPOINT", "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "OTEL_BLRP_MAX_EXPORT_BATCH_SIZE", "OTEL_BLRP_MAX_QUEUE_SIZE"} {
+	for _, key := range []string{"OTEL_COLLECTOR_SVC", "OTEL_EXPORTER_OTLP_ENDPOINT", "OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "OTEL_EXPORTER_OTLP_METRICS_ENDPOINT", "OTEL_BLRP_MAX_EXPORT_BATCH_SIZE", "OTEL_BLRP_MAX_QUEUE_SIZE"} {
 		t.Setenv(key, "")
 	}
 	t.Setenv("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", listener.Addr().String())
@@ -159,3 +159,50 @@ func TestSDKRecordToLogRecord_PreservesContents(t *testing.T) {
 	})
 	assert.Equal(t, attributes, got)
 }
+
+func TestRingBufferLogProcessor_FlushToBackend_PreservesTraceContext(t *testing.T) {
+	traceID, spanID := trace.TraceID{3}, trace.SpanID{4}
+	emitCtx := trace.ContextWithSpanContext(t.Context(), trace.NewSpanContext(trace.SpanContextConfig{
+		TraceID:    traceID,
+		SpanID:     spanID,
+		TraceFlags: trace.FlagsSampled,
+	}))
+
+	buffer := &RingBufferLogProcessor{}
+	provider := sdklog.NewLoggerProvider(sdklog.WithProcessor(buffer))
+	t.Cleanup(func() { _ = provider.Shutdown(context.Background()) })
+
+	var original otellog.Record
+	original.SetBody(attribute.StringValue("buffered log with trace context"))
+	original.SetSeverity(otellog.SeverityInfo)
+	provider.Logger("test").Emit(emitCtx, original)
+	require.Equal(t, 1, buffer.size)
+
+	// Capture flushed record emitted through FlushToBackend into a target provider
+	sink := &recordingProcessor{}
+	targetProvider := sdklog.NewLoggerProvider(sdklog.WithProcessor(sink))
+	t.Cleanup(func() { _ = targetProvider.Shutdown(context.Background()) })
+
+	// Debug request context without span context
+	debugReqCtx := context.Background()
+	buffer.FlushToBackend(debugReqCtx, targetProvider.Logger("re-emitted"))
+
+	require.Len(t, sink.records, 1)
+	reEmitted := sink.records[0]
+	assert.Equal(t, traceID, reEmitted.TraceID())
+	assert.Equal(t, spanID, reEmitted.SpanID())
+	assert.Equal(t, trace.FlagsSampled, reEmitted.TraceFlags())
+	assert.Equal(t, "buffered log with trace context", reEmitted.Body().AsString())
+}
+
+type recordingProcessor struct {
+	records []sdklog.Record
+}
+
+func (p *recordingProcessor) OnEmit(_ context.Context, r *sdklog.Record) error {
+	p.records = append(p.records, r.Clone())
+	return nil
+}
+func (p *recordingProcessor) Enabled(_ context.Context, _ sdklog.EnabledParameters) bool { return true }
+func (p *recordingProcessor) Shutdown(_ context.Context) error                            { return nil }
+func (p *recordingProcessor) ForceFlush(_ context.Context) error                          { return nil }
