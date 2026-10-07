@@ -58,6 +58,7 @@ func TestGrpcTraceOpts_HTTPSEndpoint(t *testing.T) {
 // --- InitProviders no-op path ---
 
 func TestInitProviders_NoEndpoint_ReturnsNoop(t *testing.T) {
+	t.Setenv("OTEL_COLLECTOR_SVC", "")
 	t.Setenv("OTEL_EXPORTER_OTLP_ENDPOINT", "")
 	t.Setenv("OTEL_EXPORTER_OTLP_TRACES_ENDPOINT", "")
 	t.Setenv("OTEL_EXPORTER_OTLP_LOGS_ENDPOINT", "")

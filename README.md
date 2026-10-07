@@ -5,6 +5,8 @@ This enables switching between the different loggers without changing your code!
 
 We also added OpenTelemetry (otel) spans and logs using helpers and wrappers.
 
+Requires Go 1.26 or newer, matching the OpenTelemetry 1.47 SDK requirements.
+
 ## Supported loggers
 * Pretty printer (default)
 * Structured logger based on [log/slog](https://pkg.go.dev/log/slog) with otel support
